@@ -1,36 +1,63 @@
-import axios from "axios";
+// src/api.js
+import axios from 'axios';
 
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// ✅ Use Basic Auth for login, Bearer for other requests
-export const loginUser = async (username, password) => {
-    try {
-        const response = await axios.post(`${API_URL}/login`, {}, {
-            auth: { username, password }  // ✅ Basic Auth
-        });
-        localStorage.setItem("token", response.data.token);
-        return response.data;
-    } catch (error) {
-        throw error;
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// Add interceptors
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const loginUser = async (username, password) => {
+  try {
+    const response = await api.post('/login', {}, {
+      auth: { username, password }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Login failed');
+  }
 };
 
-
-
-// ✅ Fetch CSV API - Ensure token is included in Authorization header
+// CSV API
 export const fetchCSV = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found!");
+  try {
+    const response = await api.get('/fetch_csv');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Failed to fetch CSV data');
+  }
+};
 
-    try {
-        const response = await axios.get(`${API_URL}/fetch_csv`, {
-            headers: { 
-                Authorization: `Bearer ${token}`  // ✅ Use Bearer token
-            }
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Fetch CSV error:", error);
-        throw error;
-    }
+// Secure Data Example
+export const fetchSecureData = async () => {
+  try {
+    const response = await api.get('/secure-data');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Request failed');
+  }
 };
