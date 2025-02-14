@@ -22,12 +22,12 @@ const WS_URL = "ws://localhost:8000/api/ws";  // Fixed WebSocket URL
 // Create a CSS file named Dashboard.css
 const styles = `
 .dashboard-container {
-    padding: 20px;
-    max-width: 1200px;
+    padding: 1.5rem;
+    max-width: 1400px;
     margin: 0 auto;
-    background-color: #1a1a1a;
+    background-color: #111827;
     color: #ffffff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
 }
 
@@ -35,161 +35,293 @@ const styles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 10px 0;
-    border-bottom: 1px solid #333;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dashboard-title {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 1.875rem;
+    font-weight: 700;
     margin: 0;
     color: #ffffff;
+    letter-spacing: -0.025em;
+    background: linear-gradient(45deg, #60A5FA, #34D399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .status-indicator {
     display: inline-flex;
     align-items: center;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 14px;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
     font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .status-connected {
-    background-color: #1b4332;
-    color: #4ade80;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.2);
 }
 
 .status-disconnected {
-    background-color: #442222;
-    color: #ff4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #F87171;
+    border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
 .error-message {
-    background-color: #442222;
-    color: #ff4444;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    border: 1px solid #ff4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #F87171;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chart-container {
-    background-color: #242424;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #333;
-    height: 300px;
+    background-color: #1F2937;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    height: 350px;
 }
 
 .data-table {
     width: 100%;
-    border-collapse: collapse;
-    background-color: #242424;
-    border-radius: 8px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #1F2937;
+    border-radius: 1rem;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .data-table th {
-    background-color: #333;
+    background-color: #374151;
     color: #fff;
-    padding: 12px 16px;
+    padding: 1rem;
     text-align: left;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .data-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #333;
-    font-size: 14px;
-    color: #e0e0e0;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    color: #D1D5DB;
+    transition: all 0.2s ease;
+}
+
+.data-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .data-input {
     width: 100%;
-    padding: 8px;
-    background-color: #333;
-    border: 1px solid #444;
-    border-radius: 4px;
+    padding: 0.75rem;
+    background-color: #374151;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
     color: #fff;
-    font-size: 14px;
-}
-
-.action-button {
-    padding: 6px 12px;
-    margin-left: 8px;
-    background-color: transparent;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: #fff;
-    cursor: pointer;
+    font-size: 0.875rem;
     transition: all 0.2s ease;
 }
 
-.action-button:hover {
-    background-color: #333;
+.data-input:focus {
+    outline: none;
+    border-color: #60A5FA;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.data-input:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-button {
+    padding: 0.5rem 1rem;
+    margin-left: 0.5rem;
+    background-color: #374151;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+}
+
+.action-button:hover:not(:disabled) {
+    background-color: #4B5563;
+    transform: translateY(-1px);
 }
 
 .action-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    background-color: #374151;
 }
 
 .save-button {
-    background-color: #1b4332;
-    border-color: #4ade80;
+    background-color: #059669;
+    border-color: #34D399;
 }
 
-.save-button:hover {
-    background-color: #2d503f;
+.save-button:hover:not(:disabled) {
+    background-color: #047857;
 }
 
 .delete-button {
-    border-color: #dc2626;
+    background-color: #DC2626;
+    border-color: #F87171;
 }
 
-.delete-button:hover {
-    background-color: #502222;
+.delete-button:hover:not(:disabled) {
+    background-color: #B91C1C;
 }
 
 .add-button {
-    background-color: #2563eb;
+    background: linear-gradient(45deg, #60A5FA, #34D399);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
     border: none;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 0.875rem;
+    font-weight: 600;
     transition: all 0.2s ease;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .add-button:hover {
-    background-color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .locked-row {
-    background-color: rgba(220, 38, 38, 0.1);
+    background-color: rgba(239, 68, 68, 0.05);
 }
 
 .cell-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
 }
 
 .lock-indicator {
-    font-size: 12px;
-    color: #dc2626;
-    background-color: rgba(220, 38, 38, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 8px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.editing-row {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.editing-row .lock-indicator {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.cooldown-row {
+    background-color: rgba(245, 158, 11, 0.05);
+}
+
+.cooldown-row .lock-indicator {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #FBBF24;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+@media (max-width: 1024px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+    
+    .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .chart-container {
+        height: 250px;
+        padding: 1rem;
+    }
+    
+    .action-button {
+        padding: 0.375rem 0.75rem;
+        min-width: 70px;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .action-button {
+        margin-left: 0.25rem;
+        font-size: 0.75rem;
+        min-width: 60px;
+    }
+}
+
+.loading-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    font-size: 1rem;
+    color: #D1D5DB;
+    background-color: #1F2937;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 `;
 
@@ -208,6 +340,7 @@ const Dashboard = () => {
     const [editIndex, setEditIndex] = useState(null);
     const [editRow, setEditRow] = useState({});
     const [lockedRows, setLockedRows] = useState({});
+    const lockedRowsRef = useRef(lockedRows);
     const [errorMessage, setErrorMessage] = useState("");
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [newRow, setNewRow] = useState(null);
@@ -272,8 +405,21 @@ const Dashboard = () => {
         let reconnectTimeout;
         let reconnectAttempts = 0;
         let pingInterval;
-        const MAX_RECONNECT_ATTEMPTS = 10; // Increased from 5 to 10
-        const RECONNECT_DELAY = 2000; // Reduced from 3000 to 2000ms
+        const MAX_RECONNECT_ATTEMPTS = 10;
+        const RECONNECT_DELAY = 2000;
+        const PING_INTERVAL = 30000;
+        let lastPingTime = Date.now();
+        let pingTimeoutId;
+
+        const checkConnection = () => {
+            const now = Date.now();
+            if (now - lastPingTime > PING_INTERVAL * 2) {
+                console.log("No ping received, reconnecting...");
+                if (wsRef.current) {
+                    wsRef.current.close();
+                }
+            }
+        };
 
         const connect = () => {
             try {
@@ -287,53 +433,23 @@ const Dashboard = () => {
                     setWsStatus("connected");
                     setErrorMessage("");
                     reconnectAttempts = 0;
+                    lastPingTime = Date.now();
 
-                    // Start ping interval to keep connection alive
+                    // Start ping interval
                     pingInterval = setInterval(() => {
                         if (ws.readyState === WebSocket.OPEN) {
                             ws.send(JSON.stringify({ type: "ping" }));
+                            pingTimeoutId = setTimeout(checkConnection, PING_INTERVAL);
                         }
-                    }, 30000); // Send ping every 30 seconds
-                };
+                    }, PING_INTERVAL);
 
-                ws.onmessage = (event) => {
-                    if (!isMounted) return;
-                    try {
-                        const message = JSON.parse(event.data);
-                        
-                        // Only log non-ping messages
-                        if (message.type !== "ping") {
-                            console.log("WebSocket message received:", message);
-                        }
-
-                        if (message.type === "lock_status") {
-                            console.log("Lock status update:", message);
-                            setLockedRows(prev => {
-                                const newLocks = { ...prev };
-                                if (message.locked_by) {
-                                    newLocks[message.row_index] = message.locked_by;
-                                } else {
-                                    delete newLocks[message.row_index];
-                                }
-                                return newLocks;
-                            });
-                        } else if (message.type === "csv_update") {
-                            console.log("CSV data update:", message.data);
-                            setData(message.data);
-                        } else if (message.type === "random_number") {
-                            setChartData(prevData => {
-                                // Create new arrays instead of spreading to avoid memory issues
-                                const newLabels = prevData.labels.slice(-MAX_DATA_POINTS + 1).concat([new Date(message.timestamp).toLocaleTimeString()]);
-                                const newValues = prevData.values.slice(-MAX_DATA_POINTS + 1).concat([message.value]);
-                                
-                                return {
-                                    labels: newLabels,
-                                    values: newValues
-                                };
-                            });
-                        }
-                    } catch (error) {
-                        console.error("Error parsing WebSocket message:", error);
+                    // Request lock state verification after reconnection
+                    if (editIndex !== null) {
+                        console.log("Requesting lock verification after reconnection");
+                        ws.send(JSON.stringify({
+                            type: "verify_lock",
+                            row_index: editIndex
+                        }));
                     }
                 };
 
@@ -343,23 +459,112 @@ const Dashboard = () => {
                     setWsStatus("disconnected");
                     wsRef.current = null;
                     clearInterval(pingInterval);
+                    clearTimeout(pingTimeoutId);
 
-                    // Only attempt to reconnect if not manually closed
+                    // Don't clear edit state immediately on disconnect
+                    // It will be restored if we reconnect within the grace period
+
                     if (event.code !== 1000) {
                         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                             reconnectAttempts++;
-                            console.log(`Reconnecting... Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
-                            reconnectTimeout = setTimeout(connect, RECONNECT_DELAY * Math.min(reconnectAttempts, 5));
+                            const delay = RECONNECT_DELAY * Math.min(reconnectAttempts, 5);
+                            console.log(`Reconnecting in ${delay}ms... Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+                            reconnectTimeout = setTimeout(connect, delay);
                         } else {
-                            setErrorMessage("Connection lost. Please refresh the page.");
+                            setErrorMessage("Connection lost. Please refresh the page to continue editing.");
+                            // Clear edit state after max reconnection attempts
+                            setEditIndex(null);
+                            setEditRow({});
                         }
                     }
                 };
 
-                ws.onerror = (error) => {
-                    console.error("WebSocket error:", error);
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.close();
+                ws.onmessage = (event) => {
+                    if (!isMounted) return;
+                    try {
+                        const message = JSON.parse(event.data);
+                        lastPingTime = Date.now();
+                        
+                        if (message.type === "ping") {
+                            clearTimeout(pingTimeoutId);
+                            return;
+                        }
+
+                        if (message.type === "lock_status") {
+                            setLockedRows(prev => {
+                                const newLocks = { ...prev };
+                                if (message.locked_by) {
+                                    newLocks[message.row_index] = {
+                                        username: message.locked_by,
+                                        status: message.status,
+                                        expiresAt: new Date(message.expires_at),
+                                        message: message.message || ''
+                                    };
+                                    
+                                    // If this is our lock being restored after reconnection
+                                    if (message.locked_by === user?.username && 
+                                        message.status === 'editing' && 
+                                        message.row_index === editIndex) {
+                                        console.log("Lock restored after reconnection");
+                                    }
+                                    // If our lock was taken by someone else
+                                    else if (message.row_index === editIndex && 
+                                             message.locked_by !== user?.username) {
+                                        setEditIndex(null);
+                                        setEditRow({});
+                                        setErrorMessage("Your lock was lost due to connection issues.");
+                                    }
+                                } else {
+                                    delete newLocks[message.row_index];
+                                    if (message.row_index === editIndex) {
+                                        setEditIndex(null);
+                                        setEditRow({});
+                                    }
+                                }
+                                return newLocks;
+                            });
+                        } else if (message.type === "csv_update") {
+                            console.log("Received CSV update:", {
+                                source: message.source,
+                                currentUser: user?.username,
+                                timestamp: message.timestamp
+                            });
+
+                            // Skip if we're the source of the update
+                            if (message.source === user?.username) {
+                                console.log("Skipping update from self");
+                                return;
+                            }
+
+                            // Handle updates from other users while preserving local edits
+                            setData(prevData => {
+                                const newData = [...message.data];
+                                
+                                // If we're currently editing, preserve our edits
+                                if (editIndex !== null && editIndex < newData.length) {
+                                    console.log("Preserving local edits for row", editIndex);
+                                    newData[editIndex] = { ...editRow };
+                                }
+                                
+                                return newData;
+                            });
+
+                            // Show notification about the update
+                            if (message.source) {
+                                setErrorMessage(`Data updated by ${message.source}`);
+                                setTimeout(() => setErrorMessage(""), 3000);
+                            }
+                        } else if (message.type === "random_number") {
+                            setChartData(prevData => {
+                                const newLabels = prevData.labels.slice(-MAX_DATA_POINTS + 1)
+                                    .concat([new Date(message.timestamp).toLocaleTimeString()]);
+                                const newValues = prevData.values.slice(-MAX_DATA_POINTS + 1)
+                                    .concat([message.value]);
+                                return { labels: newLabels, values: newValues };
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error processing WebSocket message:", error);
                     }
                 };
 
@@ -378,6 +583,7 @@ const Dashboard = () => {
             isMounted = false;
             clearTimeout(reconnectTimeout);
             clearInterval(pingInterval);
+            clearTimeout(pingTimeoutId);
             
             if (wsRef.current) {
                 wsRef.current.close(1000, "Component unmounting");
@@ -387,7 +593,11 @@ const Dashboard = () => {
                 ws.close(1000, "Component unmounting");
             }
         };
-    }, [user?.username]);
+    }, [user?.username, editIndex]);
+
+    useEffect(() => {
+        lockedRowsRef.current = lockedRows;
+    }, [lockedRows]);
 
     const unlockRow = useCallback((index) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -423,24 +633,31 @@ const Dashboard = () => {
 
     const handleSaveNew = async () => {
         try {
-            // ✅ Convert numeric fields to numbers
+            setErrorMessage("");
             const formattedRow = {
                 ...newRow,
                 pnl: parseFloat(newRow.pnl) || 0,
                 margin: parseFloat(newRow.margin) || 0,
                 max_risk: parseFloat(newRow.max_risk) || 0
             };
-    
-            await axios.post(`${API_URL}/add_csv`, formattedRow, {
+
+            const response = await axios.post(`${API_URL}/add_csv`, formattedRow, {
                 headers: { 
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json'
                 }
             });
             
+            // Update local state immediately
+            if (response.data && response.data.data) {
+                setData(response.data.data);
+            }
+            
             setNewRow(null);
             setIsAddingNew(false);
             setErrorMessage("");
+            
+            // The WebSocket will handle broadcasting the update to all clients
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Failed to add new entry";
             setErrorMessage(errorMsg);
@@ -473,14 +690,24 @@ const Dashboard = () => {
 
     const handleUpdate = async (index) => {
         try {
-            await axios.put(`${API_URL}/update_csv/${index}`, editRow, {
+            setErrorMessage("");
+            const response = await axios.put(`${API_URL}/update_csv/${index}`, editRow, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
             });
+            
+            // Update local state immediately
+            setData(prevData => {
+                const newData = [...prevData];
+                newData[index] = { ...editRow };
+                return newData;
+            });
+            
             setEditIndex(null);
             setEditRow({});
             setIsAddingNew(false);
             unlockRow(index);
-            setErrorMessage("");
+            
+            // The WebSocket will handle broadcasting the update to all clients
         } catch (error) {
             setErrorMessage(error.response?.data?.detail || "Failed to update entry");
             console.error("Update Entry Error:", error);
@@ -489,10 +716,15 @@ const Dashboard = () => {
 
     const handleDelete = async (index) => {
         try {
+            setErrorMessage("");
             await axios.delete(`${API_URL}/delete_csv/${index}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
             });
-            setErrorMessage("");
+            
+            // Update local state immediately
+            setData(prevData => prevData.filter((_, i) => i !== index));
+            
+            // The WebSocket will handle broadcasting the update to all clients
         } catch (error) {
             setErrorMessage(error.response?.data?.detail || "Failed to delete entry");
             console.error("Delete Entry Error:", error);
@@ -505,8 +737,9 @@ const Dashboard = () => {
             return;
         }
     
-        if (lockedRows[index]) {
-            setErrorMessage(`Row locked by ${lockedRows[index]}`);
+        const currentLock = lockedRowsRef.current[index];
+        if (currentLock && new Date() < new Date(currentLock.expiresAt)) {
+            setErrorMessage(currentLock.message || `Row locked by ${currentLock.username}`);
             return;
         }
     
@@ -515,41 +748,61 @@ const Dashboard = () => {
             return;
         }
     
-        try {
-            // Explicit lock request
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject("Lock request timed out"), 2000);
-                
-                const handler = (event) => {
-                    const msg = JSON.parse(event.data);
-                    console.log("Lock response received:", msg);
-                    
-                    if (msg.type === "lock_status" && msg.row_index === index) {
-                        clearTimeout(timeout);
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 1000;
+        let retryCount = 0;
+    
+        const attemptLock = async () => {
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
                         wsRef.current.removeEventListener('message', handler);
-                        if (msg.locked_by === user.username) {
-                            resolve();
-                        } else {
-                            reject("Failed to acquire lock");
+                        reject("Lock request timed out");
+                    }, 5000);
+    
+                    const handler = (event) => {
+                        try {
+                            const msg = JSON.parse(event.data);
+                            if (msg.type === "lock_status" && msg.row_index === index) {
+                                clearTimeout(timeout);
+                                wsRef.current.removeEventListener('message', handler);
+                                if (msg.locked_by === user.username && msg.status === 'editing') {
+                                    resolve();
+                                } else {
+                                    reject(msg.message || "Failed to acquire lock");
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error parsing message:", err);
                         }
-                    }
-                };
+                    };
     
-                wsRef.current.addEventListener('message', handler);
-                wsRef.current.send(JSON.stringify({
-                    type: "lock_row",
-                    row_index: index
-                }));
-            });
+                    wsRef.current.addEventListener('message', handler);
+                    wsRef.current.send(JSON.stringify({
+                        type: "lock_row",
+                        row_index: index
+                    }));
+                });
     
-            setEditIndex(index);
-            setEditRow({ ...row });
-            setErrorMessage("");
-        } catch (err) {
-            console.error("Lock error:", err);
-            setErrorMessage(typeof err === 'string' ? err : "Failed to lock row for editing");
-            unlockRow(index);
-        }
+                setEditIndex(index);
+                setEditRow({ ...row });
+                setErrorMessage("");
+                return true;
+            } catch (err) {
+                console.error("Lock attempt failed:", err);
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    console.log(`Retrying lock (${retryCount}/${MAX_RETRIES})...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    return attemptLock();
+                }
+                setErrorMessage(`Failed to lock row: ${err}`);
+                unlockRow(index);
+                return false;
+            }
+        };
+    
+        return attemptLock();
     };
 
     const cancelEditing = (index) => {
@@ -577,6 +830,23 @@ const Dashboard = () => {
             lastValue: chartData.values[chartData.values.length - 1]
         });
     }, [chartData]);
+
+    // Add cooldown timer effect
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setLockedRows(prev => {
+                const now = new Date();
+                const updated = { ...prev };
+                Object.keys(updated).forEach(index => {
+                    if (now > new Date(updated[index].expiresAt)) {
+                        delete updated[index];
+                    }
+                });
+                return updated;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="dashboard-container">
@@ -745,67 +1015,79 @@ const Dashboard = () => {
                             )}
 
                             {/* Existing Rows */}
-                            {data.map((row, index) => (
-                                <tr key={index} className={lockedRows[index] ? "locked-row" : ""}>
-                                    {headers.map(header => (
-                                        <td key={header}>
+                            {data.map((row, index) => {
+                                const lockInfo = lockedRows[index];
+                                const isLocked = lockInfo && new Date() < new Date(lockInfo.expiresAt);
+                                const isCooldown = lockInfo?.status === 'cooldown';
+                                const remainingTime = lockInfo 
+                                    ? Math.ceil((new Date(lockInfo.expiresAt) - new Date()) / 1000)
+                                    : 0;
+
+                                return (
+                                    <tr key={index} 
+                                        className={isLocked ? (isCooldown ? "cooldown-row" : "editing-row") : ""}>
+                                        {headers.map(header => (
+                                            <td key={header}>
+                                                {editIndex === index ? (
+                                                    <input
+                                                        type={['pnl', 'margin', 'max_risk'].includes(header) ? "number" : "text"}
+                                                        className="data-input"
+                                                        value={editRow[header] || ""}
+                                                        onChange={(e) => handleInputChange(e, header)}
+                                                        placeholder={['pnl', 'margin', 'max_risk'].includes(header) ? "0" : `Enter ${header}`}
+                                                    />
+                                                ) : (
+                                                    <div className="cell-content">
+                                                        <span>{row[header]}</span>
+                                                        {lockInfo && isLocked && (
+                                                            <div className="lock-indicator">
+                                                                {isCooldown 
+                                                                    ? `Available in ${remainingTime}s`
+                                                                    : `Being modified by ${lockInfo.username}`}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        ))}
+                                        <td>
                                             {editIndex === index ? (
-                                                <input
-                                                    type={['pnl', 'margin', 'max_risk'].includes(header) ? "number" : "text"}
-                                                    className="data-input"
-                                                    value={editRow[header] || ""}
-                                                    onChange={(e) => handleInputChange(e, header)}
-                                                    placeholder={['pnl', 'margin', 'max_risk'].includes(header) ? "0" : `Enter ${header}`}
-                                                />
+                                                <>
+                                                    <button
+                                                        className="action-button save-button"
+                                                        onClick={() => handleUpdate(index)}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        className="action-button"
+                                                        onClick={() => cancelEditing(index)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </>
                                             ) : (
-                                                <div className="cell-content">
-                                                    <span>{row[header]}</span>
-                                                    {lockedRows[index] && (
-                                                        <span className="lock-indicator">
-                                                            {lockedRows[index]}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <>
+                                                    <button
+                                                        className="action-button"
+                                                        onClick={() => startEditing(index, row)}
+                                                        disabled={isLocked}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        className="action-button delete-button"
+                                                        onClick={() => handleDelete(index)}
+                                                        disabled={isLocked}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </>
                                             )}
                                         </td>
-                                    ))}
-                                    <td>
-                                        {editIndex === index ? (
-                                            <>
-                                                <button
-                                                    className="action-button save-button"
-                                                    onClick={() => handleUpdate(index)}
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    className="action-button"
-                                                    onClick={() => cancelEditing(index)}
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    className="action-button"
-                                                    onClick={() => startEditing(index, row)}
-                                                    disabled={lockedRows[index] && lockedRows[index] !== user.username}
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    className="action-button delete-button"
-                                                    onClick={() => handleDelete(index)}
-                                                    disabled={lockedRows[index] && lockedRows[index] !== user.username}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </>

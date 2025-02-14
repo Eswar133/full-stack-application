@@ -1,70 +1,215 @@
-# Getting Started with Create React App
+# Frontend Documentation
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
+The frontend is built using React, providing a modern, responsive interface for data management and real-time updates. It features authentication, real-time data synchronization, and a dynamic dashboard.
 
-## Available Scripts
+## Core Components
 
-In the project directory, you can run:
+### 1. App Component (`App.js`)
+- Root component of the application
+- Implements routing logic
+- Manages authentication context
+- Protected route handling
 
-### `npm start`
+Features:
+- Route protection
+- Authentication state management
+- Navigation management
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 2. Authentication Context (`AuthContext.js`)
+- Manages authentication state
+- Handles JWT token management
+- Provides authentication methods
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Key Features:
+- JWT token storage
+- Login/logout functionality
+- Authentication state persistence
+- Axios interceptor configuration
 
-### `npm test`
+Methods:
+- login(username, password)
+- logout()
+- useAuth() hook
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 3. Dashboard Component (`Dashboard.js`)
+The main interface for data management and visualization.
 
-### `npm run build`
+#### State Management
+```javascript
+const [data, setData] = useState([]);
+const [chartData, setChartData] = useState({ labels: [], values: [] });
+const [wsStatus, setWsStatus] = useState("connecting");
+const [editIndex, setEditIndex] = useState(null);
+const [editRow, setEditRow] = useState({});
+const [lockedRows, setLockedRows] = useState({});
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Real-time Data Visualization**
+   - Line chart for random numbers
+   - Real-time updates
+   - Configurable data points limit
+   - Responsive chart sizing
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **WebSocket Connection**
+   - Automatic connection management
+   - Reconnection logic
+   - Connection status indication
+   - Ping/Pong mechanism
 
-### `npm run eject`
+3. **Data Management**
+   - CRUD operations for entries
+   - Real-time updates
+   - Optimistic updates
+   - Error handling
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+4. **Row Locking System**
+   - Visual lock indicators
+   - Cooldown period display
+   - Lock acquisition
+   - Lock release
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+5. **Responsive Design**
+   - Mobile-friendly layout
+   - Adaptive table display
+   - Responsive controls
+   - Dynamic sizing
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 4. Login Component (`Login.js`)
+- User authentication interface
+- Form validation
+- Error handling
+- Responsive design
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Features:
+- Username/password validation
+- Error message display
+- Responsive layout
+- Authentication state management
 
-## Learn More
+## Styling System
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Dashboard Styles
+```css
+/* Container Styles */
+.dashboard-container {
+    max-width: 1400px;
+    background-color: #111827;
+    color: #ffffff;
+}
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+/* Component-specific styles */
+.chart-container {
+    height: 350px;
+    background-color: #1F2937;
+}
 
-### Code Splitting
+/* Responsive Design */
+@media (max-width: 1024px) {
+    /* Tablet layout */
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+@media (max-width: 768px) {
+    /* Mobile layout */
+}
+```
 
-### Analyzing the Bundle Size
+### Theme Colors
+- Primary: #60A5FA (Blue)
+- Success: #34D399 (Green)
+- Error: #F87171 (Red)
+- Background: #111827 (Dark)
+- Surface: #1F2937 (Dark Gray)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## API Integration
 
-### Making a Progressive Web App
+### Endpoints
+- GET `/api/fetch_csv`: Fetch data
+- POST `/api/add_csv`: Add entry
+- PUT `/api/update_csv/{index}`: Update entry
+- DELETE `/api/delete_csv/{index}`: Delete entry
+- WebSocket: `ws://localhost:8000/api/ws`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### WebSocket Messages
+1. **Incoming Messages**
+   - lock_status: Row lock updates
+   - csv_update: Data changes
+   - random_number: Chart updates
+   - ping: Connection health
 
-### Advanced Configuration
+2. **Outgoing Messages**
+   - lock_row: Request row lock
+   - unlock_row: Release lock
+   - verify_lock: Verify lock state
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Error Handling
+- API error handling
+- WebSocket connection errors
+- Data validation errors
+- Authentication errors
+- Lock acquisition failures
 
-### Deployment
+## State Management
+- Local state for UI
+- WebSocket state
+- Authentication state
+- Row lock state
+- Edit state
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Performance Optimizations
+- Debounced updates
+- Optimistic UI updates
+- Efficient re-rendering
+- Connection management
+- Chart optimization
 
-### `npm run build` fails to minify
+## Security Features
+- JWT token management
+- Secure WebSocket connection
+- Protected routes
+- Input validation
+- Error handling
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Setup and Configuration
+
+### Prerequisites
+- Node.js 14+
+- npm or yarn
+- Modern web browser
+
+### Installation
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure environment:
+   ```bash
+   cp .env.example .env
+   ```
+4. Start development server:
+   ```bash
+   npm start
+   ```
+
+### Building for Production
+```bash
+npm run build
+```
+
+## Best Practices
+- Component composition
+- State management
+- Error handling
+- Performance optimization
+- Responsive design
+- Code organization
+
+## Testing
+- Component testing
+- Integration testing
+- WebSocket testing
+- Error scenario testing
+- Responsive design testing

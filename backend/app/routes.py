@@ -11,7 +11,9 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
 router = APIRouter()
+
 
 class CSVEntry(BaseModel):
     user: Optional[str] = Field(default="")
@@ -25,7 +27,7 @@ class CSVEntry(BaseModel):
     class Config:
         allow_population_by_field_name = True
 
-# ✅ Fetch Random Numbers
+
 @router.get("/numbers", dependencies=[Depends(verify_token)])
 def get_numbers():
     conn = get_db_connection()
@@ -35,16 +37,15 @@ def get_numbers():
     conn.close()
     return data
 
-# ✅ Fetch CSV File (Read)
+
 @router.get("/fetch_csv")
 async def fetch_csv(request: Request, _: str = Depends(verify_token)) -> List[Dict[str, Any]]:
-    """Fetch the CSV data."""
     try:
         return read_csv()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ Add new entry to CSV (Create)
+
 @router.post("/add_csv")
 async def add_csv(request: Request, data: CSVEntry, _: str = Depends(verify_token)):
     try:
@@ -59,17 +60,21 @@ async def add_csv(request: Request, data: CSVEntry, _: str = Depends(verify_toke
             "max_risk": float(data.max_risk) if data.max_risk else 0.0
         }
         await append_csv_entry(entry_data, username)
-        return {"message": "Entry added successfully"}
+        
+        updated_data = read_csv()
+        return {
+            "message": "Entry added successfully",
+            "data": updated_data
+        }
     except Exception as e:
-        # ✅ Return detailed error message
         raise HTTPException(
             status_code=500,
             detail=f"Failed to add entry: {str(e)}"
         )
-# ✅ Update an entry in CSV (Update)
+
+
 @router.put("/update_csv/{index}")
 async def update_csv(index: int, data: CSVEntry, request: Request, _: str = Depends(verify_token)):
-    """Update an existing entry in the CSV file."""
     try:
         username = request.state.username
         entry_data = {
@@ -90,10 +95,9 @@ async def update_csv(index: int, data: CSVEntry, request: Request, _: str = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ Delete an entry from CSV (Delete)
+
 @router.delete("/delete_csv/{index}")
 async def delete_csv(index: int, request: Request, _: str = Depends(verify_token)):
-    """Delete an entry from the CSV file."""
     try:
         username = request.state.username
         await delete_csv_entry(index, username)
@@ -105,13 +109,13 @@ async def delete_csv(index: int, request: Request, _: str = Depends(verify_token
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ WebSocket for Real-time Data
+
 @router.websocket("/ws")
 async def websocket_route(websocket: WebSocket, username: str = None):
-    """WebSocket endpoint for real-time updates."""
     if not username:
         await websocket.close(code=4000, reason="Username is required")
         return
     await websocket_endpoint(websocket, username)
+
 
 router.include_router(auth_router, prefix="")

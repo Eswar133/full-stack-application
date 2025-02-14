@@ -3,7 +3,7 @@ import os
 import shutil
 from datetime import datetime
 from filelock import FileLock
-from websocket import broadcast_table_update, is_row_locked
+from websocket import broadcast_table_update, is_row_locked, broadcast_message, row_locks
 import numpy as np
 
 # Get the absolute path to the backend/app directory
@@ -68,11 +68,18 @@ def ensure_csv_exists():
 # ✅ Create Backup before modification
 def create_backup():
     """Create a backup of the CSV file."""
-    ensure_csv_exists()
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    backup_path = os.path.join(BACKUP_DIR, f"backup_{timestamp}.csv")
-    shutil.copy(CSV_FILE, backup_path)
-    return backup_path
+    try:
+        ensure_csv_exists()
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        backup_path = os.path.join(BACKUP_DIR, f"backup_{timestamp}.csv")
+        
+        shutil.copy2(CSV_FILE, backup_path)  # Use copy2 to preserve metadata
+        return backup_path
+    except Exception as e:
+        print(f"Warning: Failed to create backup: {e}")
+        return None
 
 # ✅ Read CSV file and return as dictionary with proper float handling
 def read_csv():
@@ -97,8 +104,9 @@ async def update_csv_entry(index: int, new_data: dict, username: str):
     if not username:
         raise ValueError("Username is required")
     
+    # Check if row is locked by another user
     if is_row_locked(index, username):
-        raise RowLockError(f"Row {index} locked by another user")
+        raise RowLockError("This row is currently being edited by another user")
     
     ensure_csv_exists()
     try:
@@ -106,26 +114,27 @@ async def update_csv_entry(index: int, new_data: dict, username: str):
             df = pd.read_csv(CSV_FILE)
             
             if index >= len(df):
-                raise ValueError("Invalid row index")
+                raise ValueError(f"Invalid row index: {index}")
             
-            # Update the row with new data and metadata
+            # Update the row with new data
             for key, value in new_data.items():
                 if key in df.columns:
                     df.at[index, key] = value
             
-            create_backup()
+            # Save first, then create backup
             df.to_csv(CSV_FILE, index=False)
-    
-    finally:
-        if index in row_locks and row_locks[index][0] == username:
-            del row_locks[index]
-            await broadcast_message({
-                "type": "lock_status",
-                "row_index": index,
-                "locked_by": None
-            })
+            try:
+                create_backup()
+            except Exception as backup_error:
+                print(f"Warning: Backup creation failed: {backup_error}")
+            
+            # Broadcast the update with source username
+            await broadcast_table_update(df.to_dict(orient="records"), username)
+            return True
+    except Exception as e:
+        print(f"Error updating CSV: {str(e)}")
+        raise ValueError(f"Failed to update CSV: {str(e)}")
 
-    await broadcast_table_update(read_csv())
 # ✅ Delete an entry from CSV (Delete Operation)
 async def delete_csv_entry(index: int, username: str):
     """Delete an entry with row locking."""
@@ -149,8 +158,8 @@ async def delete_csv_entry(index: int, username: str):
             df[col] = df[col].astype(float)
             df[col] = df[col].replace([np.inf, -np.inf], None)
         
-        # Broadcast the update
-        await broadcast_table_update(df.to_dict(orient="records"))
+        # Broadcast the update with source username
+        await broadcast_table_update(df.to_dict(orient="records"), username)
 
 async def append_csv_entry(new_data: dict, username: str):
     """Append a new entry to the CSV file."""
@@ -186,7 +195,8 @@ async def append_csv_entry(new_data: dict, username: str):
         
         create_backup()
         df.to_csv(CSV_FILE, index=False)
-        await broadcast_table_update(df.to_dict(orient="records"))
+        # Broadcast the update with source username
+        await broadcast_table_update(df.to_dict(orient="records"), username)
         print(f"Writing to: {os.path.abspath(CSV_FILE)}")
         
 def restore_backup(backup_timestamp: str, username: str):
