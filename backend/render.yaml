@@ -3,7 +3,7 @@ services:
     name: fullstack-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -12,4 +12,4 @@ services:
       - key: DEBUG
         value: False
       - key: ALLOWED_ORIGINS
-        value: '["https://your-frontend-url.vercel.app"]' 
+        value: '["https://cosmic-valkyrie-cc6cde.netlify.app"]' 
