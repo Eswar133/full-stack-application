@@ -442,7 +442,7 @@ const Dashboard = () => {
         };
 
         if (user) {
-            fetchData();
+        fetchData();
         }
     }, [user]);
 
@@ -475,11 +475,11 @@ const Dashboard = () => {
                 console.log("Attempting WebSocket connection...");
                 const ws = new WebSocket(`${WS_URL}?username=${encodeURIComponent(user.username)}`);
                 wsRef.current = ws;
-                
-                ws.onopen = () => {
+
+            ws.onopen = () => {
                     if (!isMounted) return;
                     console.log("WebSocket connected successfully");
-                    setWsStatus("connected");
+                setWsStatus("connected");
                     setErrorMessage("");
                     reconnectAttempts = 0;
                     lastPingTime = Date.now();
@@ -526,12 +526,12 @@ const Dashboard = () => {
                             setEditRow({});
                         }
                     }
-                };
+            };
 
-                ws.onmessage = (event) => {
+            ws.onmessage = (event) => {
                     if (!isMounted) return;
                     try {
-                        const message = JSON.parse(event.data);
+                const message = JSON.parse(event.data);
                         lastPingTime = Date.now();
                         
                         if (message.type === "ping") {
@@ -572,7 +572,7 @@ const Dashboard = () => {
                                 }
                                 return newLocks;
                             });
-                        } else if (message.type === "csv_update") {
+                } else if (message.type === "csv_update") {
                             console.log("Received CSV update:", {
                                 source: message.source,
                                 currentUser: user?.username,
@@ -626,7 +626,7 @@ const Dashboard = () => {
         };
 
         const ws = connect();
-        
+
         return () => {
             console.log("Cleaning up WebSocket connection...");
             isMounted = false;
@@ -833,7 +833,7 @@ const Dashboard = () => {
                     }));
                 });
     
-                setEditIndex(index);
+        setEditIndex(index);
                 setEditRow({ ...row });
                 setErrorMessage("");
                 return true;
@@ -927,23 +927,23 @@ const Dashboard = () => {
                 <div className="loading-message">Loading data...</div>
             ) : (
                 <>
-                    <div className="chart-container">
-                        <Line
-                            data={{
-                                labels: chartData.labels,
-                                datasets: [{
+            <div className="chart-container">
+                <Line
+                    data={{
+                        labels: chartData.labels,
+                        datasets: [{
                                     label: "Random Numbers",
-                                    data: chartData.values,
+                            data: chartData.values,
                                     borderColor: "#4ade80",
                                     backgroundColor: "rgba(74, 222, 128, 0.1)",
-                                    tension: 0.4,
-                                    fill: true,
+                            tension: 0.4,
+                            fill: true,
                                     pointRadius: 0 // Hide points for smoother appearance
                                 }]
-                            }}
-                            options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
+                    }}
+                    options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
                                 animation: false, // Disable animations completely
                                 elements: {
                                     line: {
@@ -951,10 +951,10 @@ const Dashboard = () => {
                                         tension: 0.4
                                     }
                                 },
-                                plugins: {
-                                    legend: {
+                        plugins: {
+                            legend: {
                                         display: true,
-                                        labels: {
+                                labels: {
                                             color: "#ffffff",
                                             font: {
                                                 size: 14
@@ -976,26 +976,26 @@ const Dashboard = () => {
                                     tooltip: {
                                         mode: 'index',
                                         intersect: false,
-                                    }
-                                },
-                                scales: {
-                                    y: {
+                            }
+                        },
+                        scales: {
+                            y: {
                                         beginAtZero: true,
                                         max: 100,
-                                        grid: {
+                                grid: {
                                             color: "#333",
                                             drawBorder: false
-                                        },
-                                        ticks: {
+                                },
+                                ticks: {
                                             color: "#ffffff",
                                             stepSize: 20,
                                             font: {
                                                 size: 12
                                             }
-                                        }
-                                    },
-                                    x: {
-                                        grid: {
+                                }
+                            },
+                            x: {
+                                grid: {
                                             display: false
                                         },
                                         ticks: {
@@ -1018,12 +1018,12 @@ const Dashboard = () => {
                                     active: {
                                         animation: {
                                             duration: 0
-                                        }
-                                    }
                                 }
-                            }}
-                        />
-                    </div>
+                            }
+                        }
+                    }}
+                />
+            </div>
 
                     <button 
                         className="add-button" 
@@ -1033,16 +1033,16 @@ const Dashboard = () => {
                         Add New Entry
                     </button>
 
-                    <table className="data-table">
-                        <thead>
-                            <tr>
+            <table className="data-table">
+                <thead>
+                    <tr>
                                 {headers.map(header => (
                                     <th key={header}>{header}</th>
-                                ))}
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                        ))}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
                             {/* New Row Input Fields */}
                             {isAddingNew && (
                                 <tr>
@@ -1087,16 +1087,16 @@ const Dashboard = () => {
                                     <tr key={index} 
                                         className={isLocked ? (isCooldown ? "cooldown-row" : "editing-row") : ""}>
                                         {headers.map(header => (
-                                            <td key={header}>
-                                                {editIndex === index ? (
-                                                    <input
+                                <td key={header}>
+                                    {editIndex === index ? (
+                                        <input
                                                         type={['pnl', 'margin', 'max_risk'].includes(header) ? "number" : "text"}
-                                                        className="data-input"
+                                            className="data-input"
                                                         value={editRow[header] || ""}
-                                                        onChange={(e) => handleInputChange(e, header)}
+                                            onChange={(e) => handleInputChange(e, header)}
                                                         placeholder={['pnl', 'margin', 'max_risk'].includes(header) ? "0" : `Enter ${header}`}
-                                                    />
-                                                ) : (
+                                        />
+                                    ) : (
                                                     <div className="cell-content">
                                                         <span>{row[header]}</span>
                                                         {lockInfo && isLocked && (
@@ -1107,18 +1107,18 @@ const Dashboard = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                )}
-                                            </td>
-                                        ))}
-                                        <td>
-                                            {editIndex === index ? (
+                                    )}
+                                </td>
+                            ))}
+                            <td>
+                                {editIndex === index ? (
                                                 <>
-                                                    <button
-                                                        className="action-button save-button"
+                                    <button 
+                                        className="action-button save-button"
                                                         onClick={() => handleUpdate(index)}
-                                                    >
-                                                        Save
-                                                    </button>
+                                    >
+                                        Save
+                                    </button>
                                                     <button
                                                         className="action-button"
                                                         onClick={() => cancelEditing(index)}
@@ -1126,30 +1126,30 @@ const Dashboard = () => {
                                                         Cancel
                                                     </button>
                                                 </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        className="action-button"
-                                                        onClick={() => startEditing(index, row)}
+                                ) : (
+                                    <>
+                                        <button 
+                                            className="action-button"
+                                            onClick={() => startEditing(index, row)}
                                                         disabled={isLocked}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        className="action-button delete-button"
-                                                        onClick={() => handleDelete(index)}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            className="action-button delete-button"
+                                            onClick={() => handleDelete(index)}
                                                         disabled={isLocked}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </>
-                                            )}
-                                        </td>
-                                    </tr>
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
+                            </td>
+                        </tr>
                                 );
                             })}
-                        </tbody>
-                    </table>
+                </tbody>
+            </table>
                 </>
             )}
         </div>
