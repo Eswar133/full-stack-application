@@ -4,7 +4,7 @@ from fastapi.security import (
     HTTPAuthorizationCredentials
 )
 from datetime import datetime, timedelta
-import jwt
+import PyJWT as jwt
 import sqlite3
 from passlib.context import CryptContext
 from pydantic import BaseModel

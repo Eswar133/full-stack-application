@@ -2,7 +2,7 @@ services:
   - type: web
     name: fullstack-backend
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: cd app && pip install -r ../requirements.txt
     startCommand: cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -12,4 +12,6 @@ services:
       - key: DEBUG
         value: False
       - key: ALLOWED_ORIGINS
-        value: '["https://cosmic-valkyrie-cc6cde.netlify.app"]' 
+        value: '["https://cosmic-valkyrie-cc6cde.netlify.app"]'
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend/app 
