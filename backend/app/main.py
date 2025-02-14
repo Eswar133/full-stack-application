@@ -4,6 +4,7 @@ import random
 from datetime import datetime
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from routes import router
 from database import init_db
 from websocket import websocket_endpoint, active_connections
@@ -14,6 +15,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI()
+
+# Add root endpoint
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/docs")
 
 # ✅ Enable CORS with environment variables
 app.add_middleware(

@@ -14,4 +14,10 @@ services:
       - key: ALLOWED_ORIGINS
         value: '["https://cosmic-valkyrie-cc6cde.netlify.app"]'
       - key: PYTHONPATH
-        value: /opt/render/project/src/backend/app 
+        value: /opt/render/project/src/backend/app
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: PORT
+        value: 10000 
