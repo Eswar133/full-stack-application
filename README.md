@@ -29,7 +29,7 @@ Before you begin, ensure you have the following installed:
 
 1. Navigate to the backend directory:
 ```bash
-cd backend
+cd backend/app
 ```
 
 2. Create a Python virtual environment:

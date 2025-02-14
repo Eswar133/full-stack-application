@@ -265,10 +265,6 @@ Development:
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Production:
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-```
 
 ## Performance Considerations
 
@@ -304,22 +300,3 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 - Lock operations
 - Broadcast events
 
-## Testing
-
-### Unit Tests
-- Route testing
-- Authentication testing
-- Data validation
-- Error handling
-
-### Integration Tests
-- API endpoints
-- WebSocket functionality
-- Database operations
-- File operations
-
-### Load Testing
-- Connection limits
-- Concurrent users
-- Message broadcasting
-- Lock management 
