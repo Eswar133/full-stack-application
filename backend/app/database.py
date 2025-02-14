@@ -1,7 +1,12 @@
 import sqlite3
 from passlib.context import CryptContext
+import os
+from dotenv import load_dotenv
 
-DATABASE = "backend.db"
+# Load environment variables
+load_dotenv()
+
+DATABASE = os.getenv("DATABASE_URL", "backend.db").replace("sqlite:///", "")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ✅ Initialize the database

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './AuthContext';
 import Login from './components/Login';
 import Dashboard from './Dashboard';
+import NotFound from './components/NotFound';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -14,6 +15,8 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const AppRoutes = () => {
+    const { user } = useAuth();
+
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
@@ -26,6 +29,8 @@ const AppRoutes = () => {
                 }
             />
             <Route path="/" element={<Navigate to="/dashboard" />} />
+            {/* 404 catch-all route */}
+            <Route path="*" element={user ? <NotFound /> : <Navigate to="/login" />} />
         </Routes>
     );
 };

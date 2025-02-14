@@ -191,5 +191,64 @@ npm start
 - **Monitor Logs:** Always check logs if real-time updates fail.
 - **Handle Concurrency:** WebSocket locks prevent data corruption.
 
+## Environment Setup
+
+### Backend Environment Variables
+1. Navigate to the backend directory
+2. Copy the example environment file:
+```bash
+cd backend
+cp .env.example .env
+```
+3. Update the following sensitive values in `.env`:
+```env
+JWT_SECRET_KEY="your-secure-secret-key"
+ADMIN_PASSWORD="your-secure-admin-password"
+```
+
+Key variables to configure:
+- `JWT_SECRET_KEY`: Secret key for JWT token generation
+- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD`: Default admin credentials
+- `DEBUG`: Set to False in production
+- `ALLOWED_ORIGINS`: Configure allowed frontend origins
+
+### Frontend Environment Variables
+1. Navigate to the frontend directory
+2. Copy the example environment file:
+```bash
+cd frontend
+cp .env.example .env
+```
+3. Update the API URLs if needed:
+```env
+REACT_APP_API_URL=http://your-api-domain/api
+REACT_APP_WS_URL=ws://your-api-domain/api/ws
+```
+
+Key variables to configure:
+- `REACT_APP_API_URL`: Backend API endpoint
+- `REACT_APP_WS_URL`: WebSocket endpoint
+- Feature flags for enabling/disabling functionality
+
+### Production Considerations
+
+1. **Backend Security**:
+   - Change all default credentials
+   - Set DEBUG=False
+   - Use strong JWT secret key
+   - Configure allowed origins
+   - Set appropriate token expiration
+
+2. **Frontend Security**:
+   - Configure correct API URLs
+   - Disable development features
+   - Set appropriate WebSocket timeouts
+
+3. **Environment Files**:
+   - Never commit `.env` files to version control
+   - Keep `.env.example` files updated
+   - Document all required variables
+
 
 

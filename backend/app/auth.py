@@ -9,6 +9,11 @@ import sqlite3
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import Dict, Optional
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Active sessions store
 active_sessions: Dict[str, str] = {}  # username -> token mapping
@@ -26,9 +31,9 @@ bearer = HTTPBearer()
 
 # Security configuration
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "your-secure-secret-key-here"  # Use env var in production
-ALGORITHM = "HS256"
-DATABASE = "backend.db"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+DATABASE = os.getenv("DATABASE_URL", "backend.db").replace("sqlite:///", "")
 
 # Initialize database
 def init_db():
@@ -51,10 +56,16 @@ def create_initial_user():
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        hashed_password = pwd_context.hash("admin123")
+        admin_username = os.getenv("ADMIN_USERNAME", "admin")
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        if not admin_password:
+            print("Warning: ADMIN_PASSWORD not set in environment variables")
+            return
+            
+        hashed_password = pwd_context.hash(admin_password)
         cursor.execute(
             "INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)",
-            ("admin", hashed_password)
+            (admin_username, hashed_password)
         )
         conn.commit()
     finally:

@@ -30,19 +30,19 @@ def ensure_csv_exists():
         print(f"CSV file not found, creating new one at: {CSV_FILE}")
         # Create new CSV with required columns
         df = pd.DataFrame(columns=required_columns)
-        # Add a sample row
+        # Add a sample row with non-sensitive data
         sample_row = {
-            "user": "sample_user",
-            "broker": "sample_broker",
-            "API key": "sample_key",
-            "API secret": "sample_secret",
+            "user": "",
+            "broker": "",
+            "API key": "",
+            "API secret": "",
             "pnl": 0.0,
             "margin": 0.0,
             "max_risk": 0.0
         }
         df = pd.concat([df, pd.DataFrame([sample_row])], ignore_index=True)
         df.to_csv(CSV_FILE, index=False)
-        print(f"Created new CSV file with sample data")
+        print(f"Created new CSV file with empty template")
     else:
         print(f"CSV file exists at: {CSV_FILE}")
         # Verify and fix existing CSV

@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js";
 import { useAuth } from "./AuthContext";  // Assuming you have an auth context
+import { useNavigate } from "react-router-dom";
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend);
 
@@ -260,6 +261,43 @@ const styles = `
     border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logout-button {
+    background: linear-gradient(45deg, #EF4444, #DC2626);
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logout-button:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(45deg, #DC2626, #B91C1C);
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+}
+
+.logout-button:active {
+    transform: translateY(0);
+}
+
+.username-display {
+    color: #9CA3AF;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 @media (max-width: 1024px) {
     .dashboard-container {
         padding: 1rem;
@@ -291,6 +329,16 @@ const styles = `
     .action-button {
         padding: 0.375rem 0.75rem;
         min-width: 70px;
+    }
+    
+    .header-right {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .logout-button {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
     }
 }
 
@@ -326,7 +374,8 @@ const styles = `
 `;
 
 const Dashboard = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const wsRef = useRef(null);
     const [data, setData] = useState([]);
     const [headers] = useState([
@@ -848,12 +897,23 @@ const Dashboard = () => {
         return () => clearInterval(interval);
     }, []);
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
                 <h1 className="dashboard-title">Dashboard</h1>
-                <div className={`status-indicator status-${wsStatus}`}>
-                    {wsStatus === "connected" ? "Connected" : "Disconnected"}
+                <div className="header-right">
+                    <span className="username-display">Welcome, {user?.username}</span>
+                    <div className={`status-indicator status-${wsStatus}`}>
+                        {wsStatus === "connected" ? "Connected" : "Disconnected"}
+                    </div>
+                    <button className="logout-button" onClick={handleLogout}>
+                        Logout
+                    </button>
                 </div>
             </div>
 

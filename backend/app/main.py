@@ -7,13 +7,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import router
 from database import init_db
 from websocket import websocket_endpoint, active_connections
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 
-# ✅ Enable CORS (Required for Frontend)
+# ✅ Enable CORS with environment variables
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=eval(os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000"]')),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
