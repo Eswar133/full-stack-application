@@ -24,7 +24,7 @@ async def root():
 # ✅ Enable CORS with environment variables
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=eval(os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000"]')),
+    allow_origins=["*"],  # Temporarily allow all origins for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

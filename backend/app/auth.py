@@ -122,11 +122,15 @@ def invalidate_existing_session(username: str):
 async def login(login_data: LoginRequest):
     """Accept any username/password combination and return a token."""
     try:
+        print(f"Login attempt for username: {login_data.username}")  # Debug log
+        
         # Generate token for any provided credentials
         token = jwt.encode({
             "sub": login_data.username,
             "exp": datetime.utcnow() + timedelta(hours=24)  # Extended to 24 hours
         }, SECRET_KEY, algorithm=ALGORITHM)
+        
+        print(f"Token generated successfully for {login_data.username}")  # Debug log
         
         return {
             "access_token": token,
@@ -134,8 +138,10 @@ async def login(login_data: LoginRequest):
             "username": login_data.username
         }
     except Exception as e:
-        print(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail="Login failed")
+        print(f"Login error: {e}")  # Debug log
+        print(f"SECRET_KEY: {SECRET_KEY}")  # Debug log
+        print(f"ALGORITHM: {ALGORITHM}")  # Debug log
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 @router.post("/logout")
 async def logout(request: Request, credentials: HTTPAuthorizationCredentials = Depends(bearer)):
