@@ -21,10 +21,16 @@ app = FastAPI()
 async def root():
     return RedirectResponse(url="/docs")
 
+# Get allowed origins from environment variable
+ALLOWED_ORIGINS = [
+    "https://dashflow-r0upi26x3-eswar133s-projects.vercel.app",
+    "http://localhost:3000"
+]
+
 # ✅ Enable CORS with environment variables
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporarily allow all origins for debugging
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

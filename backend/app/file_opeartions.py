@@ -8,8 +8,11 @@ import numpy as np
 
 # Get the absolute path to the backend/app directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE = os.path.join(BASE_DIR, "backend_table.csv")
-BACKUP_DIR = os.path.join(BASE_DIR, "backups")
+CSV_FILE = os.path.join(os.path.dirname(BASE_DIR), "data", "backend_table.csv")
+BACKUP_DIR = os.path.join(os.path.dirname(BASE_DIR), "data", "backups")
+
+# Create data directory
+os.makedirs(os.path.dirname(CSV_FILE), exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 class RowLockError(Exception):
