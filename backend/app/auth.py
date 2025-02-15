@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 import os
 from dotenv import load_dotenv
+import jose
 
 # Load environment variables
 load_dotenv()
@@ -163,9 +164,9 @@ async def verify_token(request: Request, credentials: HTTPAuthorizationCredentia
             raise HTTPException(status_code=401, detail="Invalid token")
         request.state.username = username
         return username
-    except jwt.ExpiredSignatureError:
+    except jose.exceptions.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired. Please login again")
-    except jwt.InvalidTokenError:
+    except jose.exceptions.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
         print(f"Token verification error: {e}")
