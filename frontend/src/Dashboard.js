@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { fetchCSV } from "./api";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
 import {
@@ -17,8 +16,9 @@ import { useNavigate } from "react-router-dom";
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend);
 
-const API_URL = "http://localhost:8000/api";  // Fixed API URL
-const WS_URL = "ws://localhost:8000/api/ws";  // Fixed WebSocket URL
+// Use environment variables instead of hardcoded URLs
+const API_URL = process.env.REACT_APP_API_URL;
+const WS_URL = process.env.REACT_APP_WS_URL;
 
 // Create a CSS file named Dashboard.css
 const styles = `
@@ -646,7 +646,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         lockedRowsRef.current = lockedRows;
-    }, [lockedRows]);
+    }, [lockedRows, editRow]);
 
     const unlockRow = useCallback((index) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -690,23 +690,17 @@ const Dashboard = () => {
                 max_risk: parseFloat(newRow.max_risk) || 0
             };
 
-            const response = await axios.post(`${API_URL}/add_csv`, formattedRow, {
+            await axios.post(`${API_URL}/add_csv`, formattedRow, {
                 headers: { 
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json'
                 }
             });
             
-            // Update local state immediately
-            if (response.data && response.data.data) {
-                setData(response.data.data);
-            }
-            
             setNewRow(null);
             setIsAddingNew(false);
             setErrorMessage("");
             
-            // The WebSocket will handle broadcasting the update to all clients
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Failed to add new entry";
             setErrorMessage(errorMsg);

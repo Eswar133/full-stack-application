@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = 'http://localhost:8000/api';
-
 const styles = `
 .login-container {
     display: flex;
