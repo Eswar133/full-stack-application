@@ -21,7 +21,7 @@
     "build": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy": "npm run build && serve -s build"
+    "vercel-build": "npm run build"
   },
   "eslintConfig": {
     "extends": [
