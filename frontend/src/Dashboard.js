@@ -809,26 +809,33 @@ const Dashboard = () => {
         }
     
         try {
+            console.log(`Requesting lock for row ${index}`);
             wsRef.current.send(JSON.stringify({
                 type: "lock_row",
                 row_index: index
             }));
 
-            // Wait for lock confirmation
-            await new Promise((resolve, reject) => {
+            // Wait for lock confirmation with retries
+            let attempts = 0;
+            const maxAttempts = 3;
+            const attemptLock = () => new Promise((resolve, reject) => {
                 const timeout = setTimeout(() => {
                     cleanup();
                     reject(new Error("Lock request timed out"));
-                }, 5000);
+                }, 10000); // Increased timeout to 10 seconds
 
                 const handler = (event) => {
-                    const message = JSON.parse(event.data);
-                    if (message.type === "lock_confirmation" && message.row_index === index) {
-                        cleanup();
-                        resolve();
-                    } else if (message.type === "lock_denied" && message.row_index === index) {
-                        cleanup();
-                        reject(new Error(message.message));
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === "lock_confirmation" && message.row_index === index) {
+                            cleanup();
+                            resolve(true);
+                        } else if (message.type === "lock_denied" && message.row_index === index) {
+                            cleanup();
+                            reject(new Error(message.message));
+                        }
+                    } catch (error) {
+                        console.error("Error parsing message:", error);
                     }
                 };
 
@@ -840,14 +847,26 @@ const Dashboard = () => {
                 wsRef.current.addEventListener('message', handler);
             });
 
-            // Lock acquired successfully
-            setEditIndex(index);
-            setEditRow({ ...row });
-            setErrorMessage("");
-            
+            while (attempts < maxAttempts) {
+                try {
+                    await attemptLock();
+                    // Lock acquired successfully
+                    setEditIndex(index);
+                    setEditRow({ ...row });
+                    setErrorMessage("");
+                    return;
+                } catch (error) {
+                    attempts++;
+                    if (attempts === maxAttempts) {
+                        throw error;
+                    }
+                    console.log(`Lock attempt ${attempts} failed, retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between retries
+                }
+            }
         } catch (error) {
             console.error("Failed to acquire lock:", error);
-            setErrorMessage(error.message || "Failed to start editing");
+            setErrorMessage(error.message || "Failed to start editing. Please try again.");
             setEditIndex(null);
             setEditRow({});
         }

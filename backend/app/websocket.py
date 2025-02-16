@@ -118,10 +118,25 @@ async def broadcast_message(message: dict, exclude: list = None):
 async def handle_lock_request(username: str, row_index: int):
     """Handle a request to lock a row for editing."""
     try:
-        await validate_and_clean_locks()
-        
         # Use a lock to prevent race conditions
         async with asyncio.Lock():
+            # Check if user already has this lock
+            if row_index in row_locks and row_locks[row_index]['username'] == username:
+                # Refresh the lock
+                now = datetime.now(utc)
+                expires_at = now + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
+                row_locks[row_index]['expires_at'] = expires_at
+                row_locks[row_index]['last_modified'] = now
+                
+                await active_connections[username].send_json({
+                    "type": "lock_confirmation",
+                    "row_index": row_index,
+                    "status": "editing",
+                    "expires_at": expires_at.isoformat(),
+                    "message": "Lock refreshed successfully"
+                })
+                return True
+
             # Validate lock request
             is_valid, error_message = await validate_lock_request(row_index, username)
             if not is_valid:
@@ -143,30 +158,46 @@ async def handle_lock_request(username: str, row_index: int):
                 'last_modified': now
             }
             
-            # Send direct confirmation to requester
+            # Send direct confirmation to requester immediately
             if username in active_connections:
-                await active_connections[username].send_json({
-                    "type": "lock_confirmation",
-                    "row_index": row_index,
-                    "status": "editing",
-                    "expires_at": expires_at.isoformat(),
-                    "message": "Lock acquired successfully"
-                })
+                try:
+                    await active_connections[username].send_json({
+                        "type": "lock_confirmation",
+                        "row_index": row_index,
+                        "status": "editing",
+                        "expires_at": expires_at.isoformat(),
+                        "message": "Lock acquired successfully"
+                    })
+                except Exception as e:
+                    print(f"Error sending lock confirmation to {username}: {e}")
+                    return False
             
             # Broadcast to others
-            await broadcast_message({
-                "type": "lock_status",
-                "row_index": row_index,
-                "status": 'editing',
-                "locked_by": username,
-                "expires_at": expires_at.isoformat(),
-                "message": f"{username} is editing this row"
-            }, exclude=[username])
+            try:
+                await broadcast_message({
+                    "type": "lock_status",
+                    "row_index": row_index,
+                    "status": 'editing',
+                    "locked_by": username,
+                    "expires_at": expires_at.isoformat(),
+                    "message": f"{username} is editing this row"
+                }, exclude=[username])
+            except Exception as e:
+                print(f"Error broadcasting lock status: {e}")
             
             return True
             
     except Exception as e:
         print(f"Lock error: {e}")
+        if username in active_connections:
+            try:
+                await active_connections[username].send_json({
+                    "type": "lock_denied",
+                    "row_index": row_index,
+                    "message": f"Lock request failed: {str(e)}"
+                })
+            except Exception:
+                pass
         return False
 
 async def restore_user_locks(username: str, websocket: WebSocket):
