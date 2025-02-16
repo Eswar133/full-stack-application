@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 import json
 from fastapi import WebSocket
 import asyncio
-from websocket import broadcast_csv_update
+from websocket import broadcast_table_update
 
 # Get the CSV file path from environment variables
 CSV_FILE_PATH = os.getenv('CSV_FILE_PATH', '/opt/render/project/src/backend/data/backend_table.csv')
@@ -79,7 +79,7 @@ async def update_csv_entry(index: int, entry: Dict[str, Any], username: str):
     df.to_csv(CSV_FILE_PATH, index=False)
     
     # Broadcast the update to all connected clients
-    await broadcast_csv_update(df.to_dict('records'), username)
+    await broadcast_table_update(df.to_dict('records'), username)
 
 async def delete_csv_entry(index: int, username: str):
     """Delete a specific entry from the CSV file."""
@@ -95,7 +95,7 @@ async def delete_csv_entry(index: int, username: str):
     df.to_csv(CSV_FILE_PATH, index=False)
     
     # Broadcast the update to all connected clients
-    await broadcast_csv_update(df.to_dict('records'), username)
+    await broadcast_table_update(df.to_dict('records'), username)
 
 async def append_csv_entry(entry: Dict[str, Any], username: str):
     """Append a new entry to the CSV file."""
@@ -107,7 +107,7 @@ async def append_csv_entry(entry: Dict[str, Any], username: str):
     df.to_csv(CSV_FILE_PATH, index=False)
     
     # Broadcast the update to all connected clients
-    await broadcast_csv_update(df.to_dict('records'), username)
+    await broadcast_table_update(df.to_dict('records'), username)
 
 def restore_backup(backup_name: str):
     """Restore a specific backup file."""
