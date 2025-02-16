@@ -18,6 +18,7 @@ row_locks: Dict[int, dict] = {}  # Stores {row_index: {username, expires_at, sta
 
 
 def is_row_locked(row_index: int, requesting_user: str) -> bool:
+    """Check if a row is locked by another user."""
     if row_index not in row_locks:
         return False
     
@@ -26,24 +27,29 @@ def is_row_locked(row_index: int, requesting_user: str) -> bool:
     
     # If lock has expired, clean it up
     if now > lock['expires_at']:
-        del row_locks[row_index]
-        return False
-    
-    # Check cooldown period
-    if lock['status'] == 'cooldown':
-        if now > lock['expires_at']:
+        if lock['status'] == 'editing':
+            # Convert to cooldown
+            row_locks[row_index] = {
+                'username': lock['username'],
+                'expires_at': now + timedelta(seconds=COOLDOWN_SECONDS),
+                'status': 'cooldown',
+                'last_modified': now
+            }
+            return True
+        else:
             del row_locks[row_index]
             return False
-        return True  # Still in cooldown
     
-    # If the requesting user has the lock and it's in editing state, allow them to continue
-    if lock['status'] == 'editing' and lock['username'] == requesting_user:
-        # Update expiration time if they're still actively editing
-        lock['expires_at'] = now + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
-        return False
+    # If the row is in cooldown, it's locked for everyone
+    if lock['status'] == 'cooldown':
+        return True
     
-    # For all other cases (different user or cooldown period), the row is locked
-    return True
+    # If someone else has the lock, it's locked
+    if lock['username'] != requesting_user:
+        return True
+    
+    # The requesting user has the lock
+    return False
 
 
 async def validate_and_clean_locks():
@@ -198,39 +204,40 @@ async def broadcast_random_number(value: float, timestamp: str):
 
 
 async def handle_lock_request(username: str, row_index: int):
+    """Handle a request to lock a row for editing."""
     try:
         await validate_and_clean_locks()
         
         # Use a lock to prevent race conditions
         async with asyncio.Lock():
-            # Check if row is locked by someone else
+            # Check if row is locked
             if is_row_locked(row_index, username):
                 if row_index in row_locks:
                     lock = row_locks[row_index]
-                    remaining_seconds = int((lock['expires_at'] - datetime.now()).total_seconds())
-                    message = (
-                        f"Row is in cooldown period ({remaining_seconds} seconds remaining)"
-                        if lock['status'] == 'cooldown'
-                        else f"This row is being modified by {lock['username']}"
-                    )
+                    remaining_seconds = max(0, int((lock['expires_at'] - datetime.now()).total_seconds()))
+                    
+                    if lock['status'] == 'cooldown':
+                        message = f"Row is in cooldown period ({remaining_seconds} seconds remaining)"
+                    else:
+                        message = f"This row is being edited by {lock['username']}"
+                    
                     await broadcast_message({
                         "type": "lock_status",
                         "row_index": row_index,
                         "status": lock['status'],
                         "locked_by": lock['username'],
                         "expires_at": lock['expires_at'].isoformat(),
-                        "message": message,
-                        "source": username
+                        "message": message
                     })
                 return False
             
-            # If we get here, either there's no lock or the requesting user has the lock
+            # Grant the lock
             expires_at = datetime.now() + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
             row_locks[row_index] = {
                 'username': username,
                 'expires_at': expires_at,
                 'status': 'editing',
-                'last_modified': None  # Will be set when they save
+                'last_modified': datetime.now()
             }
             
             await broadcast_message({
@@ -239,7 +246,7 @@ async def handle_lock_request(username: str, row_index: int):
                 "status": 'editing',
                 "locked_by": username,
                 "expires_at": expires_at.isoformat(),
-                "message": f"{username} is modifying this row"
+                "message": f"{username} is editing this row"
             })
             return True
             
@@ -249,13 +256,17 @@ async def handle_lock_request(username: str, row_index: int):
 
 
 async def handle_unlock_request(username: str, row_index: int):
+    """Handle a request to unlock a row."""
     try:
-        # Only the user who locked the row can unlock it
-        if row_index not in row_locks or row_locks[row_index]['username'] != username:
+        if row_index not in row_locks:
+            return True
+            
+        lock = row_locks[row_index]
+        if lock['username'] != username:
             return False
-        
+            
+        # Set cooldown period
         now = datetime.now()
-        # Set cooldown period (now in seconds)
         expires_at = now + timedelta(seconds=COOLDOWN_SECONDS)
         row_locks[row_index] = {
             'username': username,
@@ -264,7 +275,6 @@ async def handle_unlock_request(username: str, row_index: int):
             'last_modified': now
         }
         
-        # Broadcast cooldown status
         await broadcast_message({
             "type": "lock_status",
             "row_index": row_index,
@@ -274,7 +284,10 @@ async def handle_unlock_request(username: str, row_index: int):
             "message": f"Row is in cooldown period for {COOLDOWN_SECONDS} seconds"
         })
         
+        # Schedule lock removal after cooldown
+        asyncio.create_task(remove_lock_after_cooldown(row_index, expires_at))
         return True
+        
     except Exception as e:
         print(f"Unlock error: {e}")
         return False

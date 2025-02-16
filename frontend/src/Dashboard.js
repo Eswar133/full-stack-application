@@ -804,9 +804,16 @@ const Dashboard = () => {
         }
     
         const currentLock = lockedRowsRef.current[index];
-        if (currentLock && new Date() < new Date(currentLock.expiresAt)) {
-            setErrorMessage(currentLock.message || `Row locked by ${currentLock.username}`);
-            return;
+        if (currentLock) {
+            if (currentLock.status === 'editing' && currentLock.username !== user.username) {
+                setErrorMessage(`This row is being edited by ${currentLock.username}`);
+                return;
+            }
+            if (currentLock.status === 'cooldown') {
+                const remainingTime = Math.ceil((new Date(currentLock.expiresAt) - new Date()) / 1000);
+                setErrorMessage(`Row is in cooldown period (${remainingTime} seconds remaining)`);
+                return;
+            }
         }
     
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -814,68 +821,60 @@ const Dashboard = () => {
             return;
         }
     
-        const MAX_RETRIES = 3;
-        const RETRY_DELAY = 1000;
-        let retryCount = 0;
-    
-        const attemptLock = async () => {
-            try {
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        wsRef.current.removeEventListener('message', handler);
-                        reject("Lock request timed out");
-                    }, 5000);
-    
-                    const handler = (event) => {
-                        try {
-                            const msg = JSON.parse(event.data);
-                            if (msg.type === "lock_status" && msg.row_index === index) {
-                                clearTimeout(timeout);
-                                wsRef.current.removeEventListener('message', handler);
-                                if (msg.locked_by === user.username && msg.status === 'editing') {
-                                    resolve();
-                                } else {
-                                    reject(msg.message || "Failed to acquire lock");
-                                }
-                            }
-                        } catch (err) {
-                            console.error("Error parsing message:", err);
+        try {
+            wsRef.current.send(JSON.stringify({
+                type: "lock_row",
+                row_index: index
+            }));
+
+            // Wait for lock confirmation
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error("Lock request timed out"));
+                }, 5000);
+
+                const handler = (event) => {
+                    const message = JSON.parse(event.data);
+                    if (message.type === "lock_status" && message.row_index === index) {
+                        cleanup();
+                        if (message.locked_by === user.username && message.status === 'editing') {
+                            resolve();
+                        } else {
+                            reject(new Error(message.message || "Failed to acquire lock"));
                         }
-                    };
-    
-                    wsRef.current.addEventListener('message', handler);
-                    wsRef.current.send(JSON.stringify({
-                        type: "lock_row",
-                        row_index: index
-                    }));
-                });
-    
-        setEditIndex(index);
-                setEditRow({ ...row });
-                setErrorMessage("");
-                return true;
-            } catch (err) {
-                console.error("Lock attempt failed:", err);
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    console.log(`Retrying lock (${retryCount}/${MAX_RETRIES})...`);
-                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                    return attemptLock();
-                }
-                setErrorMessage(`Failed to lock row: ${err}`);
-                unlockRow(index);
-                return false;
-            }
-        };
-    
-        return attemptLock();
+                    }
+                };
+
+                const cleanup = () => {
+                    clearTimeout(timeout);
+                    wsRef.current?.removeEventListener('message', handler);
+                };
+
+                wsRef.current.addEventListener('message', handler);
+            });
+
+            // Lock acquired successfully
+            setEditIndex(index);
+            setEditRow({ ...row });
+            setErrorMessage("");
+        } catch (error) {
+            console.error("Failed to acquire lock:", error);
+            setErrorMessage(error.message || "Failed to start editing");
+            setEditIndex(null);
+            setEditRow({});
+        }
     };
 
     const cancelEditing = (index) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                type: "unlock_row",
+                row_index: index
+            }));
+        }
         setEditIndex(null);
         setEditRow({});
-        setIsAddingNew(false);
-        unlockRow(index);
         setErrorMessage("");
     };
 
