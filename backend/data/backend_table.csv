@@ -1,0 +1,2 @@
+user,broker,API key,API secret,pnl,margin,max_risk
+sample_user,sample_broker,sample_key,sample_secret,0.0,0.0,0.0 

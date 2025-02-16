@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, Request
 from auth import verify_token
 from auth import router as auth_router
 from database import get_db_connection
-from file_opeartions import (
+from file_operations import (
     read_csv, update_csv_entry, delete_csv_entry, append_csv_entry, 
     restore_backup, RowLockError
 )

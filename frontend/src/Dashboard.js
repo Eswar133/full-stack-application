@@ -418,19 +418,31 @@ const Dashboard = () => {
                     throw new Error("No authentication token found");
                 }
 
+                console.log("Fetching CSV data from:", `${API_URL}/fetch_csv`);
+                console.log("Using token:", token);
+                
                 const response = await axios.get(`${API_URL}/fetch_csv`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
                 
+                console.log("CSV Response:", response.data);
+                
                 if (Array.isArray(response.data)) {
                     setData(response.data);
+                    console.log("CSV data loaded successfully:", response.data.length, "rows");
                 } else {
                     throw new Error("Invalid data format received");
                 }
             } catch (error) {
                 console.error("Failed to load CSV:", error);
+                console.error("Error details:", {
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status
+                });
                 setErrorMessage(
                     error.response?.data?.detail || 
                     error.message || 
@@ -442,7 +454,8 @@ const Dashboard = () => {
         };
 
         if (user) {
-        fetchData();
+            console.log("User authenticated, fetching CSV data...");
+            fetchData();
         }
     }, [user]);
 

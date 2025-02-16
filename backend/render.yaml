@@ -3,7 +3,7 @@ services:
     name: fullstack-backend
     env: python
     buildCommand: |
-      mkdir -p data
+      mkdir -p backend/data
       pip install -r app/requirements.txt
     startCommand: cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -24,10 +24,10 @@ services:
       - key: PORT
         value: 10000
       - key: CSV_FILE_PATH
-        value: /opt/render/project/src/data/backend_table.csv
+        value: /opt/render/project/src/backend/data/backend_table.csv
       - key: CSV_BACKUP_DIR
-        value: /opt/render/project/src/data/backups
+        value: /opt/render/project/src/backend/data/backups
     disk:
       name: data
-      mountPath: /opt/render/project/src/data
+      mountPath: /opt/render/project/src/backend/data
       sizeGB: 1 
