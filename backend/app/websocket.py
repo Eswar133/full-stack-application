@@ -4,10 +4,14 @@ import asyncio
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict
 from datetime import datetime, timedelta
+import pytz
 
 # Constants for lock timeouts
 EDIT_TIMEOUT_MINUTES = 15  # Maximum time a user can hold a lock
 COOLDOWN_SECONDS = 15      # Cooldown period after editing (in seconds)
+
+# Add IST timezone
+ist = pytz.timezone('Asia/Kolkata')
 
 active_connections: Dict[str, WebSocket] = {}
 row_locks: Dict[int, dict] = {}  # Stores {row_index: {username, expires_at, status, last_modified}}
@@ -148,21 +152,26 @@ async def broadcast_message(message: dict):
 async def broadcast_table_update(data: list, source_username: str = None):
     """Broadcast table updates to all connected clients."""
     print(f"Broadcasting table update from {source_username}")
+    current_time = datetime.now(ist)
     message = {
         "type": "csv_update",
         "data": data,
         "source": source_username,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": current_time.isoformat()
     }
     await broadcast_message(message)
     print("Table update broadcast completed")
 
 
 async def broadcast_random_number(value: float, timestamp: str):
+    # Convert timestamp to IST
+    utc_dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+    ist_dt = utc_dt.astimezone(ist)
+    
     await broadcast_message({
         "type": "random_number",
         "value": value,
-        "timestamp": timestamp
+        "timestamp": ist_dt.strftime('%I:%M:%S %p')  # Format: HH:MM:SS AM/PM
     })
 
 

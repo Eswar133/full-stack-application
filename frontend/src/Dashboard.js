@@ -589,7 +589,8 @@ const Dashboard = () => {
                             console.log("Received CSV update:", {
                                 source: message.source,
                                 currentUser: user?.username,
-                                timestamp: message.timestamp
+                                timestamp: message.timestamp,
+                                rowCount: message.data?.length
                             });
 
                             // Skip if we're the source of the update
@@ -619,7 +620,7 @@ const Dashboard = () => {
                         } else if (message.type === "random_number") {
                             setChartData(prevData => {
                                 const newLabels = prevData.labels.slice(-MAX_DATA_POINTS + 1)
-                                    .concat([new Date(message.timestamp).toLocaleTimeString()]);
+                                    .concat([message.timestamp]);  // Now using IST formatted timestamp
                                 const newValues = prevData.values.slice(-MAX_DATA_POINTS + 1)
                                     .concat([message.value]);
                                 return { labels: newLabels, values: newValues };
@@ -703,16 +704,25 @@ const Dashboard = () => {
                 max_risk: parseFloat(newRow.max_risk) || 0
             };
 
-            await axios.post(`${API_URL}/add_csv`, formattedRow, {
+            const response = await axios.post(`${API_URL}/add_csv`, formattedRow, {
                 headers: { 
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json'
                 }
             });
             
+            // Update the local data state with the new data
+            if (response.data && response.data.data) {
+                setData(response.data.data);
+            }
+            
             setNewRow(null);
             setIsAddingNew(false);
             setErrorMessage("");
+            
+            // Show success message
+            setErrorMessage("Entry added successfully!");
+            setTimeout(() => setErrorMessage(""), 3000);
             
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Failed to add new entry";
