@@ -23,6 +23,10 @@ services:
         value: admin123
       - key: PORT
         value: 10000
+      - key: CSV_FILE_PATH
+        value: /opt/render/project/src/data/backend_table.csv
+      - key: CSV_BACKUP_DIR
+        value: /opt/render/project/src/data/backups
     disk:
       name: data
       mountPath: /opt/render/project/src/data

@@ -363,21 +363,22 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             pass
         return
     
-    # Clean up any existing connection for this user
-    if username in active_connections:
-        old_connection = active_connections[username]
-        try:
-            if is_websocket_connected(old_connection):
-                await old_connection.close(code=1000)
-        except Exception:
-            pass
-        if username in active_connections:
-            del active_connections[username]
-    
     try:
+        # Accept the connection first
         await websocket.accept()
-        active_connections[username] = websocket
         print(f"WebSocket connected for user: {username}")
+        
+        # Clean up any existing connection for this user
+        if username in active_connections:
+            old_connection = active_connections[username]
+            try:
+                if is_websocket_connected(old_connection):
+                    await old_connection.close(code=1000)
+            except Exception:
+                pass
+        
+        # Store the new connection
+        active_connections[username] = websocket
         
         # Verify and restore lock states
         await verify_lock_state(websocket, username)
@@ -387,7 +388,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
         message_task = asyncio.create_task(process_messages(websocket, username))
         cleanup_task = asyncio.create_task(periodic_lock_cleanup())
         
-        # Wait for any task to complete (which usually means an error or disconnect)
+        # Wait for any task to complete
         done, pending = await asyncio.wait(
             [ping_task, message_task, cleanup_task],
             return_when=asyncio.FIRST_COMPLETED
@@ -415,31 +416,24 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             except asyncio.CancelledError:
                 pass
             
-        # Handle disconnection with grace period
-        try:
-            if username in active_connections and active_connections[username] == websocket:
-                await asyncio.sleep(5)  # 5-second grace period
-                if username in active_connections and active_connections[username] == websocket:
-                    # Only clean up if this is still the active connection for the user
-                    for row_index in list(row_locks.keys()):
-                        if row_index in row_locks and row_locks[row_index]['username'] == username:
-                            del row_locks[row_index]
-                            try:
-                                if websocket.client_state.state == "connected":
-                                    await broadcast_message({
-                                        "type": "lock_status",
-                                        "row_index": row_index,
-                                        "locked_by": None,
-                                        "status": "available",
-                                        "message": f"Row unlocked - {username} disconnected"
-                                    })
-                            except Exception as e:
-                                print(f"Error broadcasting unlock message: {e}")
-                    
-                    if username in active_connections:
-                        del active_connections[username]
-        except Exception as e:
-            print(f"Error in disconnect cleanup: {e}")
+        # Handle disconnection
+        if username in active_connections:
+            del active_connections[username]
+            
+        # Clean up locks
+        for row_index in list(row_locks.keys()):
+            if row_index in row_locks and row_locks[row_index]['username'] == username:
+                del row_locks[row_index]
+                try:
+                    await broadcast_message({
+                        "type": "lock_status",
+                        "row_index": row_index,
+                        "locked_by": None,
+                        "status": "available",
+                        "message": f"Row unlocked - {username} disconnected"
+                    })
+                except Exception as e:
+                    print(f"Error broadcasting unlock message: {e}")
 
 
 async def periodic_lock_cleanup():
