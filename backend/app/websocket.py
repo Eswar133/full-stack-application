@@ -8,14 +8,34 @@ import pytz
 
 # Constants for lock timeouts
 EDIT_TIMEOUT_MINUTES = 15  # Maximum time a user can hold a lock
-COOLDOWN_SECONDS = 5      # Cooldown period after editing (changed to 5 seconds)
+COOLDOWN_SECONDS = 5      # Cooldown period after editing
 
-# Add IST timezone
+# Add IST and UTC timezones
 ist = pytz.timezone('Asia/Kolkata')
+utc = pytz.UTC
 
 active_connections: Dict[str, WebSocket] = {}
 row_locks: Dict[int, dict] = {}  # Stores {row_index: {username, expires_at, status, last_modified}}
 
+async def validate_lock_request(row_index: int, username: str):
+    """Validate lock request with proper error handling"""
+    if row_index not in row_locks:
+        return True, None
+        
+    lock = row_locks[row_index]
+    now = datetime.now(utc)
+    
+    if now > lock['expires_at']:
+        return True, None
+        
+    if lock['status'] == 'cooldown':
+        remaining = (lock['expires_at'] - now).total_seconds()
+        return False, f"Row is in cooldown ({int(remaining)} seconds remaining)"
+        
+    if lock['username'] != username:
+        return False, f"Row is being edited by {lock['username']}"
+        
+    return True, None
 
 def is_row_locked(row_index: int, requesting_user: str) -> bool:
     """Check if a row is locked by another user."""
@@ -23,7 +43,7 @@ def is_row_locked(row_index: int, requesting_user: str) -> bool:
         return False
     
     lock = row_locks[row_index]
-    now = datetime.now()
+    now = datetime.now(utc)
     
     # If lock has expired, clean it up
     if now > lock['expires_at']:
@@ -51,77 +71,18 @@ def is_row_locked(row_index: int, requesting_user: str) -> bool:
     # The requesting user has the lock
     return False
 
-
-async def validate_and_clean_locks():
-    """Periodically validate locks and clean up expired ones"""
-    now = datetime.now()
-    expired_locks = []
+async def broadcast_message(message: dict, exclude: list = None):
+    """Broadcast a message to all connected clients except those in exclude list."""
+    if exclude is None:
+        exclude = []
     
-    for row_index, lock in row_locks.items():
-        if now > lock['expires_at']:
-            expired_locks.append(row_index)
-            # If it was in editing state, enforce cooldown
-            if lock['status'] == 'editing':
-                row_locks[row_index] = {
-                    'username': lock['username'],
-                    'expires_at': now + timedelta(seconds=COOLDOWN_SECONDS),
-                    'status': 'cooldown',
-                    'last_modified': now
-                }
-                await broadcast_message({
-                    "type": "lock_status",
-                    "row_index": row_index,
-                    "status": "cooldown",
-                    "locked_by": lock['username'],
-                    "expires_at": row_locks[row_index]['expires_at'].isoformat(),
-                    "message": f"Row is in cooldown period for {COOLDOWN_SECONDS} seconds"
-                })
-                continue
-            
-    for row_index in expired_locks:
-        if row_index in row_locks and row_locks[row_index]['status'] != 'cooldown':
-            del row_locks[row_index]
-            await broadcast_message({
-                "type": "lock_status",
-                "row_index": row_index,
-                "locked_by": None,
-                "status": "available",
-                "message": "Lock expired and row is now available"
-            })
-
-
-async def connect_client(websocket: WebSocket, username: str):
-    await websocket.accept()
-    active_connections[username] = websocket
-
-
-async def disconnect_client(username: str):
-    if username in active_connections:
-        for row_index in list(row_locks.keys()):
-            if row_locks[row_index]['username'] == username:
-                del row_locks[row_index]
-                await broadcast_message({
-                    "type": "lock_status",
-                    "row_index": row_index,
-                    "locked_by": None
-                })
-        del active_connections[username]
-
-
-def is_websocket_connected(websocket: WebSocket) -> bool:
-    """Check if a WebSocket connection is still active."""
-    try:
-        return websocket.client_state.value == 1  # 1 means connected
-    except Exception:
-        return False
-
-
-async def broadcast_message(message: dict):
-    """Broadcast a message to all connected clients."""
     print(f"Broadcasting message to {len(active_connections)} clients: {message['type']}")
     disconnected_users = []
     
     for username, connection in list(active_connections.items()):
+        if username in exclude:
+            continue
+            
         try:
             if is_websocket_connected(connection):
                 try:
@@ -153,6 +114,127 @@ async def broadcast_message(message: dict):
             finally:
                 if username in active_connections:
                     del active_connections[username]
+
+async def handle_lock_request(username: str, row_index: int):
+    """Handle a request to lock a row for editing."""
+    try:
+        await validate_and_clean_locks()
+        
+        # Use a lock to prevent race conditions
+        async with asyncio.Lock():
+            # Validate lock request
+            is_valid, error_message = await validate_lock_request(row_index, username)
+            if not is_valid:
+                if username in active_connections:
+                    await active_connections[username].send_json({
+                        "type": "lock_denied",
+                        "row_index": row_index,
+                        "message": error_message
+                    })
+                return False
+            
+            # Grant the lock
+            now = datetime.now(utc)
+            expires_at = now + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
+            row_locks[row_index] = {
+                'username': username,
+                'expires_at': expires_at,
+                'status': 'editing',
+                'last_modified': now
+            }
+            
+            # Send direct confirmation to requester
+            if username in active_connections:
+                await active_connections[username].send_json({
+                    "type": "lock_confirmation",
+                    "row_index": row_index,
+                    "status": "editing",
+                    "expires_at": expires_at.isoformat(),
+                    "message": "Lock acquired successfully"
+                })
+            
+            # Broadcast to others
+            await broadcast_message({
+                "type": "lock_status",
+                "row_index": row_index,
+                "status": 'editing',
+                "locked_by": username,
+                "expires_at": expires_at.isoformat(),
+                "message": f"{username} is editing this row"
+            }, exclude=[username])
+            
+            return True
+            
+    except Exception as e:
+        print(f"Lock error: {e}")
+        return False
+
+async def restore_user_locks(username: str, websocket: WebSocket):
+    """Restore user's locks after reconnection"""
+    now = datetime.now(utc)
+    for row_index, lock in list(row_locks.items()):
+        if lock['username'] == username and lock['status'] == 'editing':
+            if now > lock['expires_at']:
+                # Convert to cooldown if expired
+                await handle_unlock_request(username, row_index)
+            else:
+                # Refresh the lock
+                lock['expires_at'] = now + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
+                await websocket.send_json({
+                    "type": "lock_restored",
+                    "row_index": row_index,
+                    "expires_at": lock['expires_at'].isoformat(),
+                    "message": "Your lock has been restored"
+                })
+
+async def verify_lock_state(websocket: WebSocket, username: str):
+    """Verify and sync lock states after reconnection"""
+    try:
+        # Send all current locks to the reconnected client
+        for row_index, lock in row_locks.items():
+            try:
+                if is_websocket_connected(websocket):
+                    await websocket.send_json({
+                        "type": "lock_status",
+                        "row_index": row_index,
+                        "status": lock['status'],
+                        "locked_by": lock['username'],
+                        "expires_at": lock['expires_at'].isoformat(),
+                        "message": "Lock state restored after reconnection"
+                    })
+            except Exception as e:
+                print(f"Error sending lock status during verification: {e}")
+
+        # Restore user's locks
+        await restore_user_locks(username, websocket)
+        
+    except Exception as e:
+        print(f"Error in verify_lock_state: {e}")
+
+async def connect_client(websocket: WebSocket, username: str):
+    await websocket.accept()
+    active_connections[username] = websocket
+
+
+async def disconnect_client(username: str):
+    if username in active_connections:
+        for row_index in list(row_locks.keys()):
+            if row_locks[row_index]['username'] == username:
+                del row_locks[row_index]
+                await broadcast_message({
+                    "type": "lock_status",
+                    "row_index": row_index,
+                    "locked_by": None
+                })
+        del active_connections[username]
+
+
+def is_websocket_connected(websocket: WebSocket) -> bool:
+    """Check if a WebSocket connection is still active."""
+    try:
+        return websocket.client_state.value == 1  # 1 means connected
+    except Exception:
+        return False
 
 
 async def broadcast_table_update(data: list, source_username: str = None):
@@ -201,58 +283,6 @@ async def broadcast_random_number(value: float, timestamp: str):
             "value": value,
             "timestamp": format_time(current_time)
         })
-
-
-async def handle_lock_request(username: str, row_index: int):
-    """Handle a request to lock a row for editing."""
-    try:
-        await validate_and_clean_locks()
-        
-        # Use a lock to prevent race conditions
-        async with asyncio.Lock():
-            # Check if row is locked
-            if is_row_locked(row_index, username):
-                if row_index in row_locks:
-                    lock = row_locks[row_index]
-                    remaining_seconds = max(0, int((lock['expires_at'] - datetime.now()).total_seconds()))
-                    
-                    if lock['status'] == 'cooldown':
-                        message = f"Row is in cooldown period ({remaining_seconds} seconds remaining)"
-                    else:
-                        message = f"This row is being edited by {lock['username']}"
-                    
-                    await broadcast_message({
-                        "type": "lock_status",
-                        "row_index": row_index,
-                        "status": lock['status'],
-                        "locked_by": lock['username'],
-                        "expires_at": lock['expires_at'].isoformat(),
-                        "message": message
-                    })
-                return False
-            
-            # Grant the lock
-            expires_at = datetime.now() + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
-            row_locks[row_index] = {
-                'username': username,
-                'expires_at': expires_at,
-                'status': 'editing',
-                'last_modified': datetime.now()
-            }
-            
-            await broadcast_message({
-                "type": "lock_status",
-                "row_index": row_index,
-                "status": 'editing',
-                "locked_by": username,
-                "expires_at": expires_at.isoformat(),
-                "message": f"{username} is editing this row"
-            })
-            return True
-            
-    except Exception as e:
-        print(f"Lock error: {e}")
-        return False
 
 
 async def handle_unlock_request(username: str, row_index: int):
@@ -358,41 +388,6 @@ async def process_messages(websocket: WebSocket, username: str):
         except Exception as e:
             print(f"Error processing message from {username}: {e}")
             continue
-
-
-async def verify_lock_state(websocket: WebSocket, username: str):
-    """Verify and sync lock states after reconnection"""
-    try:
-        # Send all current locks to the reconnected client
-        for row_index, lock in row_locks.items():
-            try:
-                if is_websocket_connected(websocket):
-                    await websocket.send_json({
-                        "type": "lock_status",
-                        "row_index": row_index,
-                        "status": lock['status'],
-                        "locked_by": lock['username'],
-                        "expires_at": lock['expires_at'].isoformat(),
-                        "message": "Lock state restored after reconnection"
-                    })
-            except Exception as e:
-                print(f"Error sending lock status during verification: {e}")
-
-        # If user had any locks, restore them
-        for row_index, lock in list(row_locks.items()):
-            if lock['username'] == username and lock['status'] == 'editing':
-                # Extend the lock period
-                lock['expires_at'] = datetime.now() + timedelta(minutes=EDIT_TIMEOUT_MINUTES)
-                await broadcast_message({
-                    "type": "lock_status",
-                    "row_index": row_index,
-                    "status": "editing",
-                    "locked_by": username,
-                    "expires_at": lock['expires_at'].isoformat(),
-                    "message": f"Lock restored for {username}"
-                })
-    except Exception as e:
-        print(f"Error in verify_lock_state: {e}")
 
 
 async def websocket_endpoint(websocket: WebSocket, username: str):

@@ -27,11 +27,7 @@ async def root():
 
 # Get allowed origins from environment variable
 ALLOWED_ORIGINS = [
-    "https://dashflow-h80c2z9aa-eswar133s-projects.vercel.app",
-    "https://dashflow-5em8h3aux-eswar133s-projects.vercel.app",
-    "https://dashflow-hr6opecps-eswar133s-projects.vercel.app",
-    "https://dashflow-3clbiykeb-eswar133s-projects.vercel.app",
-    "https://dashflow-r0upi26x3-eswar133s-projects.vercel.app",
+    "https://dashflow-f0d7j6hgp-eswar133s-projects.vercel.app",
     "http://localhost:3000",
     "https://full-stack-application-spz2.onrender.com"
 ]

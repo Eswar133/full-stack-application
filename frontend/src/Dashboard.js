@@ -803,19 +803,6 @@ const Dashboard = () => {
             return;
         }
     
-        const currentLock = lockedRowsRef.current[index];
-        if (currentLock) {
-            if (currentLock.status === 'editing' && currentLock.username !== user.username) {
-                setErrorMessage(`This row is being edited by ${currentLock.username}`);
-                return;
-            }
-            if (currentLock.status === 'cooldown') {
-                const remainingTime = Math.ceil((new Date(currentLock.expiresAt) - new Date()) / 1000);
-                setErrorMessage(`Row is in cooldown period (${remainingTime} seconds remaining)`);
-                return;
-            }
-        }
-    
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
             setErrorMessage("WebSocket connection is not ready. Please wait...");
             return;
@@ -836,13 +823,12 @@ const Dashboard = () => {
 
                 const handler = (event) => {
                     const message = JSON.parse(event.data);
-                    if (message.type === "lock_status" && message.row_index === index) {
+                    if (message.type === "lock_confirmation" && message.row_index === index) {
                         cleanup();
-                        if (message.locked_by === user.username && message.status === 'editing') {
-                            resolve();
-                        } else {
-                            reject(new Error(message.message || "Failed to acquire lock"));
-                        }
+                        resolve();
+                    } else if (message.type === "lock_denied" && message.row_index === index) {
+                        cleanup();
+                        reject(new Error(message.message));
                     }
                 };
 
@@ -858,6 +844,7 @@ const Dashboard = () => {
             setEditIndex(index);
             setEditRow({ ...row });
             setErrorMessage("");
+            
         } catch (error) {
             console.error("Failed to acquire lock:", error);
             setErrorMessage(error.message || "Failed to start editing");
@@ -865,6 +852,64 @@ const Dashboard = () => {
             setEditRow({});
         }
     };
+
+    // Add WebSocket message handler
+    useEffect(() => {
+        const handleWebSocketMessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                
+                if (message.type === "lock_status") {
+                    setLockedRows(prev => {
+                        const newLocks = { ...prev };
+                        if (message.locked_by) {
+                            const serverTime = new Date(message.expires_at);
+                            newLocks[message.row_index] = {
+                                username: message.locked_by,
+                                status: message.status,
+                                expiresAt: serverTime,
+                                message: message.message || ''
+                            };
+                        } else {
+                            delete newLocks[message.row_index];
+                            if (message.row_index === editIndex) {
+                                setEditIndex(null);
+                                setEditRow({});
+                            }
+                        }
+                        return newLocks;
+                    });
+                } else if (message.type === "lock_restored") {
+                    // Handle lock restoration after reconnection
+                    const serverTime = new Date(message.expires_at);
+                    setLockedRows(prev => ({
+                        ...prev,
+                        [message.row_index]: {
+                            username: user?.username,
+                            status: 'editing',
+                            expiresAt: serverTime,
+                            message: message.message
+                        }
+                    }));
+                    setErrorMessage("Your lock has been restored");
+                    setTimeout(() => setErrorMessage(""), 3000);
+                }
+                
+            } catch (error) {
+                console.error("Error processing WebSocket message:", error);
+            }
+        };
+
+        if (wsRef.current) {
+            wsRef.current.addEventListener('message', handleWebSocketMessage);
+        }
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.removeEventListener('message', handleWebSocketMessage);
+            }
+        };
+    }, [wsRef.current, user?.username, editIndex]);
 
     const cancelEditing = (index) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
