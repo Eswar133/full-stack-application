@@ -34,6 +34,7 @@ const styles = `
 
 .form-group {
     margin-bottom: 1.5rem;
+    text-align: center;
 }
 
 .form-label {
@@ -54,6 +55,7 @@ const styles = `
     color: #ffffff;
     font-size: 1rem;
     transition: all 0.3s ease;
+    text-align: center;
 }
 
 .form-input:focus {
@@ -143,6 +145,20 @@ const styles = `
     transform: translateY(0);
 }
 
+.register-link {
+    display: block;
+    text-align: center;
+    margin-top: 1.5rem;
+    color: #60a5fa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.register-link:hover {
+    color: #3b82f6;
+}
+
 @media (max-width: 480px) {
     .login-form {
         padding: 2rem;
@@ -226,6 +242,10 @@ const Login = () => {
         <button type="submit" className="login-button">
           Login
         </button>
+
+        <a href="/register" className="register-link">
+          Don't have an account? Sign Up
+        </a>
       </form>
     </div>
   );

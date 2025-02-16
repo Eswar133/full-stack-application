@@ -8,7 +8,7 @@ import pytz
 
 # Constants for lock timeouts
 EDIT_TIMEOUT_MINUTES = 15  # Maximum time a user can hold a lock
-COOLDOWN_SECONDS = 15      # Cooldown period after editing (in seconds)
+COOLDOWN_SECONDS = 5      # Cooldown period after editing (changed to 5 seconds)
 
 # Add IST timezone
 ist = pytz.timezone('Asia/Kolkata')
@@ -163,16 +163,38 @@ async def broadcast_table_update(data: list, source_username: str = None):
     print("Table update broadcast completed")
 
 
+# Format timestamp without seconds, using IST
+def format_time(dt):
+    # Ensure the timestamp is in IST
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+        dt = pytz.utc.localize(dt).astimezone(ist)
+    elif dt.tzinfo != ist:
+        dt = dt.astimezone(ist)
+    return dt.strftime('%H:%M')  # 24-hour format without seconds
+
+
 async def broadcast_random_number(value: float, timestamp: str):
-    # Convert timestamp to IST
-    utc_dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-    ist_dt = utc_dt.astimezone(ist)
-    
-    await broadcast_message({
-        "type": "random_number",
-        "value": value,
-        "timestamp": ist_dt.strftime('%I:%M:%S %p')  # Format: HH:MM:SS AM/PM
-    })
+    try:
+        # Get current time in IST
+        current_time = datetime.now(ist)
+        
+        # Format current time without seconds
+        current_time_str = format_time(current_time)
+        
+        await broadcast_message({
+            "type": "random_number",
+            "value": value,
+            "timestamp": current_time_str
+        })
+    except Exception as e:
+        print(f"Error in broadcast_random_number: {e}")
+        # Fallback to current IST time if there's an error
+        current_time = datetime.now(ist)
+        await broadcast_message({
+            "type": "random_number",
+            "value": value,
+            "timestamp": format_time(current_time)
+        })
 
 
 async def handle_lock_request(username: str, row_index: int):
@@ -185,11 +207,11 @@ async def handle_lock_request(username: str, row_index: int):
             if is_row_locked(row_index, username):
                 if row_index in row_locks:
                     lock = row_locks[row_index]
-                    remaining_time = int((lock['expires_at'] - datetime.now()).total_seconds() / 60)
+                    remaining_seconds = int((lock['expires_at'] - datetime.now()).total_seconds())
                     message = (
-                        f"Row is in cooldown period ({remaining_time} minutes remaining)"
+                        f"Row is in cooldown period ({remaining_seconds} seconds remaining)"
                         if lock['status'] == 'cooldown'
-                        else f"Row is being modified by {lock['username']}"
+                        else f"This row is being modified by {lock['username']}"
                     )
                     await broadcast_message({
                         "type": "lock_status",

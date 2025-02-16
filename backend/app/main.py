@@ -2,17 +2,21 @@ import asyncio
 import sqlite3
 import random
 from datetime import datetime
+import pytz
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from routes import router
 from database import init_db
-from websocket import websocket_endpoint, active_connections
+from websocket import websocket_endpoint, active_connections, broadcast_random_number
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Add IST timezone
+ist = pytz.timezone('Asia/Kolkata')
 
 app = FastAPI()
 
@@ -23,6 +27,7 @@ async def root():
 
 # Get allowed origins from environment variable
 ALLOWED_ORIGINS = [
+    "https://dashflow-hr6opecps-eswar133s-projects.vercel.app",
     "https://dashflow-3clbiykeb-eswar133s-projects.vercel.app",
     "https://dashflow-r0upi26x3-eswar133s-projects.vercel.app",
     "http://localhost:3000",
@@ -57,32 +62,31 @@ async def startup_event():
 
 async def generate_numbers():
     """Generate random numbers and broadcast to all connected clients."""
+    prev_value = 50  # Starting value
     while True:
         try:
-            timestamp = datetime.now().isoformat()
-            value = random.randint(0, 100)
+            # Get current time in IST
+            current_time = datetime.now(ist)
+            
+            # Generate new value by adding/subtracting up to 10 from previous value
+            change = random.uniform(-10, 10)
+            value = max(0, min(100, prev_value + change))  # Keep between 0 and 100
+            prev_value = value
 
-            # Store in database
+            # Store in database with IST timestamp
             conn = sqlite3.connect("backend.db")
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO random_numbers (timestamp, value) VALUES (?, ?)", (timestamp, value))
+            cursor.execute(
+                "INSERT INTO random_numbers (timestamp, value) VALUES (?, ?)", 
+                (current_time.isoformat(), value)
+            )
             conn.commit()
             conn.close()
 
-            # Broadcast to all connected clients
-            message = {
-                "type": "random_number",
-                "timestamp": timestamp,
-                "value": value
-            }
-            
-            for ws in active_connections.values():
-                try:
-                    await ws.send_json(message)
-                except Exception as e:
-                    print(f"Error sending to WebSocket: {e}")
-
+            # Broadcast to all connected clients with IST time
+            await broadcast_random_number(value, current_time)
             await asyncio.sleep(1)  # Generate a new number every second
+            
         except Exception as e:
             print(f"Error in generate_numbers: {e}")
             await asyncio.sleep(1)  # Wait before retrying
