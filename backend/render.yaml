@@ -14,7 +14,7 @@ services:
       - key: DEBUG
         value: False
       - key: ALLOWED_ORIGINS
-        value: '["https://dashflow-r0upi26x3-eswar133s-projects.vercel.app", "http://localhost:3000"]'
+        value: '["https://dashflow-3clbiykeb-eswar133s-projects.vercel.app", "https://dashflow-r0upi26x3-eswar133s-projects.vercel.app", "http://localhost:3000", "https://full-stack-application-spz2.onrender.com"]'
       - key: PYTHONPATH
         value: /opt/render/project/src/backend/app
       - key: ADMIN_USERNAME

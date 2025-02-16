@@ -23,8 +23,10 @@ async def root():
 
 # Get allowed origins from environment variable
 ALLOWED_ORIGINS = [
+    "https://dashflow-3clbiykeb-eswar133s-projects.vercel.app",
     "https://dashflow-r0upi26x3-eswar133s-projects.vercel.app",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://full-stack-application-spz2.onrender.com"
 ]
 
 # ✅ Enable CORS with environment variables
@@ -34,6 +36,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # ✅ Initialize the database
